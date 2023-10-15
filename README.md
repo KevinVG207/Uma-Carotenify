@@ -20,7 +20,8 @@ Please make sure that you have installed the latest Visual C++ 2019 Redistributa
 
 1. Copy `version.dll` to the same directory with `umamusume.exe`. This should be `%USERPROFILE%\Umamusume` unless you chose an alternative installation directory in DMM.
 2. If you want to combine it with CarrotJuicer, rename its `version.dll` to `carrotjuicer.dll` and place it in the same folder as `umamusume.exe`.
-3. Start the game as usual with DMM launcher.
+3. Generate a `translations.txt` file with [Carotene](https://github.com/KevinVG207/Uma-Carotene).
+4. Start the game as usual with DMM launcher.
 
 ## Build
 (Currently untested.)

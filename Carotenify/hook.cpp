@@ -162,7 +162,7 @@ namespace
 		freopen_s(&_, "CONOUT$", "w", stderr);
 		freopen_s(&_, "CONIN$", "r", stdin);
 
-		SetConsoleTitle(L"Carotene");
+		SetConsoleTitle(L"Umapyoi");
 
 		// set this to avoid turn japanese texts into question mark
 		SetConsoleOutputCP(CP_UTF8);
@@ -734,8 +734,6 @@ void attach()
 		printf("carrotjuicer.dll found, loading...\n");
 		LoadLibraryW(L"carrotjuicer.dll");
 	}
-
-	SetConsoleTitle(L"Carotene");
 }
 
 void detach()

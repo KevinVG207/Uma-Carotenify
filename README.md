@@ -8,7 +8,7 @@ The mod hooks several functions in the game to replace Japanese text with Englis
 This readme is adapted from [EXNOA-CarrotJuicer](https://github.com/CNA-Bld/EXNOA-CarrotJuicer/blob/master/README.md).
 
 ## Disclaimer
-Carotenify is in no way associated with Uma Musume, Cygames Inc., DMM or DMM Games/EXNOA LLC. It is the developer's belief that this tool is harmless to the above companies and brands and merely acts as a tool to improve the user experience.
+Carotenify is in no way associated with Uma Musume, Cygames Inc. It is the developer's belief that this tool is harmless to the beforementioned company and merely acts as a tool to improve the user experience.
 
 **However**, this software is against the Terms of Service of the game, so **use at your own risk**. The developer of this software is not responsible for any damages caused by the use of this software.
 

@@ -1,7 +1,7 @@
 # Carotenify
 (Currently heavily WIP.)
 
-Carotenify is an English translation mod for Uma Musume: Pretty Derby (DMM Edition) and works together with the [Carotene](https://github.com/KevinVG207/Uma-Carotene) English translation project. In essence, it's a powered-up version of [localify](https://github.com/GEEKiDoS/umamusume-localify).
+Carotenify is an English translation mod for Uma Musume: Pretty Derby (DMM Edition) and works together with the [Carotene](https://github.com/KevinVG207/Uma-Carotene) English translation project. In essence, it's a powered-up version of [Trainers' Legend G](https://github.com/MinamiChiwa/Trainers-Legend-G)'s translation feature but without any other features.
 
 The mod hooks several functions in the game to replace Japanese text with English text and allows for some modifying of the text rendering settings using special tags. (Documentation coming soon™.)
 

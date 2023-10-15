@@ -7,6 +7,14 @@ The mod hooks several functions in the game to replace Japanese text with Englis
 
 This readme is adapted from [EXNOA-CarrotJuicer](https://github.com/CNA-Bld/EXNOA-CarrotJuicer/blob/master/README.md).
 
+## Disclaimer
+Uma Launcher is in no way associated with Uma Musume, Cygames Inc., DMM or DMM Games/EXNOA LLC. It is the developer's belief that this tool is harmless to the above companies and brands and merely acts as a tool to improve the user experience.
+
+**However**, this software is against the Terms of Service of the game, so **use at your own risk**. The developer of this software is not responsible for any damages caused by the use of this software.
+
+So far, there are no known cases of bans for using any of the existing translation mods, which use the same methods.
+
+
 ## Usage
 Please make sure that you have installed the latest Visual C++ 2019 Redistributable, otherwise the game would crash at start up time with no message at all.
 

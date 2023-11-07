@@ -213,7 +213,7 @@ typedef void* (*il2cpp_assembly_get_image_t)(void* assembly);
 typedef void* (*il2cpp_class_from_name_t)(void* image, const char* namespaze, const char* name);
 typedef MethodInfo* (*il2cpp_class_get_methods_t)(void* klass, void** iter);
 typedef MethodInfo* (*il2cpp_class_get_method_from_name_t)(void* klass, const char* name, int argsCount);
-typedef void* (*il2cpp_method_get_param_t)(const MethodInfo* method, uint32_t index);
+typedef Il2CppType* (*il2cpp_method_get_param_t)(const MethodInfo* method, uint32_t index);
 typedef void* (*il2cpp_object_new_t)(void* klass);
 typedef void* (*il2cpp_resolve_icall_t)(const char* name);
 typedef void* (*il2cpp_array_new_t)(void* klass, uintptr_t count);
@@ -232,6 +232,8 @@ typedef void* (*il2cpp_class_from_type_t)(const Il2CppType* type);
 typedef void (*il2cpp_runtime_class_init_t)(void* klass);
 typedef void* (*il2cpp_runtime_invoke_t)(MethodInfo* method, void* obj, void** params, Il2CppObject** exc);
 typedef Il2CppType* (*il2cpp_class_enum_basetype_t)(void * klass);
+typedef uint32_t (*il2cpp_method_get_param_count_t)(const MethodInfo* method);
+typedef char* (*il2cpp_type_get_name_t)(const Il2CppType* type);
 
 // function defines
 extern il2cpp_string_new_utf16_t il2cpp_string_new_utf16;
@@ -261,3 +263,14 @@ extern il2cpp_class_from_type_t il2cpp_class_from_type;
 extern il2cpp_runtime_class_init_t il2cpp_runtime_class_init;
 extern il2cpp_runtime_invoke_t il2cpp_runtime_invoke;
 extern il2cpp_class_enum_basetype_t il2cpp_class_enum_basetype;
+extern il2cpp_method_get_param_count_t il2cpp_method_get_param_count;
+extern il2cpp_type_get_name_t il2cpp_type_get_name;
+
+template <typename T>
+T read_field(const void* ptr, const FieldInfo* field)
+{
+	T result;
+	const auto fieldPtr = static_cast<const std::byte*>(ptr) + field->offset;
+	std::memcpy(std::addressof(result), fieldPtr, sizeof(T));
+	return result;
+}

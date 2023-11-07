@@ -70,14 +70,11 @@ namespace
 				auto param = il2cpp_method_get_param(method, i);
 				auto param_type = param->type;
 				auto compare_type = method_types[i];
-				printf("Comparing %x with %x\n", param_type, compare_type);
 				if (param_type != compare_type)
 				{
-					printf("No match\n");
 					match = false;
 					break;
 				}
-				printf("Match\n");
 			}
 
 			if (!match)
@@ -350,29 +347,6 @@ namespace
 	}
 
 
-	void* dictionary_get_item_orig = nullptr;
-	void* dictionary_get_item_hook(void* _this, void* key)
-	{
-		void* orig_result = reinterpret_cast<decltype(dictionary_get_item_hook)*>(dictionary_get_item_orig)(_this, key);
-
-		printf("dictionary_get_item_hook\n");
-		
-		// Determine if orig_result is an Il2CppString
-		if (orig_result == nullptr || *(uint8_t*)orig_result != 0x14)
-		{
-			return orig_result;
-		}
-
-		// Attempt to convert orig_result to Il2CppString
-		Il2CppString* orig_result_string = reinterpret_cast<Il2CppString*>(orig_result);
-
-		printf("dictionary_get_item_hook: %s\n", il2cppstring_to_utf8(orig_result_string->start_char).c_str());
-
-		return orig_result;
-
-
-	}
-
 	void* populate_orig = nullptr;
 	bool populate_hook(void* _this, Il2CppString* str, TextGenerationSettings_t* settings){
 		printf("populate_hook: %s\n", il2cppstring_to_utf8(str->start_char).c_str());
@@ -557,12 +531,12 @@ namespace
 	{
 		// printf("localize_jp_get_hook\n");
 
-		std::string textid_string = text_id_to_string[id];
-		if (textid_string == "Outgame0100")
-		{
-			printf("!!!Found Outgame0100!!!");
-			stacktrace();
-		}
+		// std::string textid_string = text_id_to_string[id];
+		// if (textid_string == "Outgame0100")
+		// {
+		// 	printf("!!!Found Outgame0100!!!");
+		// 	stacktrace();
+		// }
 
 		Il2CppString* orig_text = reinterpret_cast<decltype(localize_jp_get_hook)*>(localize_jp_get_orig)(id);
 
@@ -574,7 +548,7 @@ namespace
 			return orig_text;
 		}
 
-		// std::string textid_string = text_id_to_string[id];
+		std::string textid_string = text_id_to_string[id];
 		// printf("TextIdString: %s\n", textid_string.c_str());
 		
 		if (text_id_string_to_translation.find(textid_string) == text_id_string_to_translation.end())
@@ -727,24 +701,6 @@ namespace
 	}
 
 
-	void* tmp_ugui_common_orig = nullptr;
-	void* tmp_ugui_common_hook(void* _this, Il2CppString* str)
-	{
-		printf("tmp_ugui_common_hook: %s\n", il2cppstring_to_utf8(str->start_char).c_str());
-
-		return reinterpret_cast<decltype(tmp_ugui_common_hook)*>(tmp_ugui_common_orig)(_this, str);
-	}
-
-
-	void* bitmapvertexmove_changetext_orig = nullptr;
-	void* bitmapvertexmove_changetext_hook(void* _this, Il2CppString* str)
-	{
-		printf("bitmapvertexmove_changetext_hook: %s\n", il2cppstring_to_utf8(str->start_char).c_str());
-
-		return reinterpret_cast<decltype(bitmapvertexmove_changetext_hook)*>(bitmapvertexmove_changetext_orig)(_this, str);
-	}
-
-
 	void* to_string_orig = nullptr;
 	Il2CppString* to_string_hook(void* _this)
 	{
@@ -763,96 +719,10 @@ namespace
 	}
 
 
-	void* buttoncommon_update_orig = nullptr;
-	void* buttoncommon_update_hook(void* _this)
-	{
-		Il2CppString* obj_str = to_string_hook(_this);
-		printf("buttoncommon_update_hook: %s\n", il2cppstring_to_utf8(obj_str->start_char).c_str());
-
-		return reinterpret_cast<decltype(buttoncommon_update_hook)*>(buttoncommon_update_orig)(_this);
-	}
-
-
-	void* footerbutton_gbbafbl_orig = nullptr;
-	Il2CppString* footerbutton_gbbafbl_hook(void* _this, void* is_in, void* direction)
-	{
-		Il2CppString* orig_result = reinterpret_cast<decltype(footerbutton_gbbafbl_hook)*>(footerbutton_gbbafbl_orig)(_this, is_in, direction);
-		printf("footerbutton_gbbafbl_hook: %s\n", il2cppstring_to_utf8(orig_result->start_char).c_str());
-
-		return orig_result;
-	}
-
-
-
-	void* footerbutton_initialize_orig = nullptr;
-	void* footerbutton_initialize_hook(void* _this, Il2CppString* prefab_path, void* button_type, void* on_pointer_up, Il2CppString* button_name)
-	{
-		printf("footerbutton_initialize_hook: %s\n", il2cppstring_to_utf8(button_name->start_char).c_str());
-		printf("prefab_path: %s\n", il2cppstring_to_utf8(prefab_path->start_char).c_str());
-		// stacktrace();
-
-		return reinterpret_cast<decltype(footerbutton_initialize_hook)*>(footerbutton_initialize_orig)(_this, prefab_path, button_type, on_pointer_up, button_name);
-	}
-
-
-	void* flashplayer_settext_orig = nullptr;
-	void* flashplayer_settext_hook(void* _this, Il2CppString* text, Il2CppString* child_name, bool full_match, void* root_game_object)
-	{
-		printf("flashplayer_settext_hook: %s\n", il2cppstring_to_utf8(text->start_char).c_str());
-		printf("child_name: %s\n", il2cppstring_to_utf8(child_name->start_char).c_str());
-		Il2CppString* obj_str = to_string_hook(root_game_object);
-		printf("root_game_object: %s\n", il2cppstring_to_utf8(obj_str->start_char).c_str());
-
-		return reinterpret_cast<decltype(flashplayer_settext_hook)*>(flashplayer_settext_orig)(_this, text, child_name, full_match, root_game_object);
-	}
-
-	void* homeutil_text_orig = nullptr;
-	Il2CppString* homeutil_text_hook(void* _this, void* state)
-	{
-		Il2CppString* orig_result = reinterpret_cast<decltype(homeutil_text_hook)*>(homeutil_text_orig)(_this, state);
-
-		printf("homeutil_text_hook: %s\n", il2cppstring_to_utf8(orig_result->start_char).c_str());
-
-		return orig_result;
-	}
-
-	void* footerbutton_setnotifmessage_orig = nullptr;
-	void* footerbutton_setnotifmessage_hook(void* _this, Il2CppString* text)
-	{
-		printf("footerbutton_setnotifmessage_hook: %s\n", il2cppstring_to_utf8(text->start_char).c_str());
-
-		return reinterpret_cast<decltype(footerbutton_setnotifmessage_hook)*>(footerbutton_setnotifmessage_orig)(_this, text);
-	}
-
-	void* tmptext_settext_orig = nullptr;
-	void* tmptext_settext_hook(void* _this, Il2CppString* text)
-	{
-		printf("tmptext_settext_hook: %s\n", il2cppstring_to_utf8(text->start_char).c_str());
-
-		return reinterpret_cast<decltype(tmptext_settext_hook)*>(tmptext_settext_orig)(_this, text);
-	}
-
-	void* tmptext_settext2_orig = nullptr;
-	void* tmptext_settext2_hook(void* _this, Il2CppString* text, void* syncTextInputBox)
-	{
-		printf("tmptext_settext2_hook: %s\n", il2cppstring_to_utf8(text->start_char).c_str());
-
-		return reinterpret_cast<decltype(tmptext_settext2_hook)*>(tmptext_settext_orig)(_this, text, syncTextInputBox);
-	}
-
-
-	void* tmptext_settext_internal_orig = nullptr;
-	void* tmptext_settext_internal_hook(void* _this, Il2CppString* text)
-	{
-		printf("tmptext_settext_internal_hook: %s\n", il2cppstring_to_utf8(text->start_char).c_str());
-
-		return reinterpret_cast<decltype(tmptext_settext_internal_hook)*>(tmptext_settext_orig)(_this, text);
-	}
-
 	void* uimanager_SetHeaderTitleText2_orig = nullptr;
 	void* uimanager_SetHeaderTitleText2_hook(void* _this, Il2CppString* text, void* guide_id)
 	{
-		printf("uimanager_SetHeaderTitleText2_hook: %s\n", il2cppstring_to_utf8(text->start_char).c_str());
+		// printf("uimanager_SetHeaderTitleText2_hook: %s\n", il2cppstring_to_utf8(text->start_char).c_str());
 		return reinterpret_cast<decltype(uimanager_SetHeaderTitleText2_hook)*>(uimanager_SetHeaderTitleText2_orig)(_this, text, guide_id);
 	}
 
@@ -860,7 +730,7 @@ namespace
 	void* uimanager_SetHeaderTitleText1_orig = nullptr;
 	void* uimanager_SetHeaderTitleText1_hook(void* _this, int text_id, void* guide_id)
 	{
-		printf("uimanager_SetHeaderTitleText1_hook: %d\n", text_id);
+		// printf("uimanager_SetHeaderTitleText1_hook: %d\n", text_id);
 		// If text_id in text_id_to_string, then use that instead
 		if (text_id_to_string.find(text_id) != text_id_to_string.end())
 		{
@@ -911,45 +781,6 @@ namespace
 			printf("Domain: %p\n", domain);
 
 
-			auto textmeshpro_assembly = il2cpp_domain_assembly_open(domain, "Unity.TextMeshPro.dll");
-			printf("TextMeshPro Assembly: %p\n", textmeshpro_assembly);
-
-			auto textmeshpro_image = il2cpp_assembly_get_image(textmeshpro_assembly);
-			printf("TextMeshPro Image: %p\n", textmeshpro_image);
-
-			auto textmeshpro_tmptext_class = il2cpp_class_from_name(textmeshpro_image, "TMPro", "TMP_Text");
-			printf("TMP_Text: %p\n", textmeshpro_tmptext_class);
-
-			auto textmeshpro_tmptext_settext_addr = il2cpp_class_get_method_from_name(textmeshpro_tmptext_class, "set_text", 1)->methodPointer;
-			printf("textmeshpro_tmptext_settext_addr: %p\n", textmeshpro_tmptext_settext_addr);
-
-			auto textmeshpro_tmptext_settext_addr_offset = reinterpret_cast<void*>(textmeshpro_tmptext_settext_addr);
-			printf("textmeshpro_tmptext_settext_addr_offset: %p\n", textmeshpro_tmptext_settext_addr_offset);
-
-			MH_CreateHook(textmeshpro_tmptext_settext_addr_offset, tmptext_settext_hook, &tmptext_settext_orig);
-			MH_EnableHook(textmeshpro_tmptext_settext_addr_offset);
-
-
-			auto textmeshpro_tmptext_settext2_addr = il2cpp_class_get_method_from_name(textmeshpro_tmptext_class, "SetText", 1)->methodPointer;
-			printf("textmeshpro_tmptext_settext2_addr: %p\n", textmeshpro_tmptext_settext2_addr);
-
-			auto textmeshpro_tmptext_settext2_addr_offset = reinterpret_cast<void*>(textmeshpro_tmptext_settext2_addr);
-			printf("textmeshpro_tmptext_settext2_addr_offset: %p\n", textmeshpro_tmptext_settext2_addr_offset);
-
-			MH_CreateHook(textmeshpro_tmptext_settext2_addr_offset, tmptext_settext2_hook, &tmptext_settext2_orig);
-			MH_EnableHook(textmeshpro_tmptext_settext2_addr_offset);
-
-
-			auto textmeshpro_tmptext_settextinternal_addr = il2cpp_class_get_method_from_name(textmeshpro_tmptext_class, "SetTextInternal", 1)->methodPointer;
-			printf("textmeshpro_tmptext_settextinternal_addr: %p\n", textmeshpro_tmptext_settextinternal_addr);
-
-			auto textmeshpro_tmptext_settextinternal_addr_offset = reinterpret_cast<void*>(textmeshpro_tmptext_settextinternal_addr);
-			printf("textmeshpro_tmptext_settextinternal_addr_offset: %p\n", textmeshpro_tmptext_settextinternal_addr_offset);
-
-			MH_CreateHook(textmeshpro_tmptext_settextinternal_addr_offset, tmptext_settext_internal_hook, &tmptext_settext_internal_orig);
-			MH_EnableHook(textmeshpro_tmptext_settextinternal_addr_offset);
-
-
 			auto mscorlib_assembly = il2cpp_domain_assembly_open(domain, "mscorlib.dll");
 			printf("mscorlib Assembly: %p\n", mscorlib_assembly);
 			auto mscorlib_image = il2cpp_assembly_get_image(mscorlib_assembly);
@@ -961,17 +792,6 @@ namespace
 			auto stack_trace_addr = il2cpp_class_get_method_from_name(environment_class, "get_StackTrace", 0)->methodPointer;
 			environment_get_stacktrace = reinterpret_cast<decltype(environment_get_stacktrace)>(stack_trace_addr);
 
-			auto dictionary_class = il2cpp_class_from_name(mscorlib_image, "System.Collections.Generic", "Dictionary`2");
-			printf("Dictionary: %p\n", dictionary_class);
-
-			auto dictionary_get_item_addr = il2cpp_class_get_method_from_name(dictionary_class, "get_Item", 1)->methodPointer;
-			printf("dictionary_get_item_addr: %p\n", dictionary_get_item_addr);
-
-			auto dictionary_get_item_addr_offset = reinterpret_cast<void*>(dictionary_get_item_addr);
-			printf("dictionary_get_item_addr_offset: %p\n", dictionary_get_item_addr_offset);
-
-			MH_CreateHook(dictionary_get_item_addr_offset, dictionary_get_item_hook, &dictionary_get_item_orig);
-			MH_EnableHook(dictionary_get_item_addr_offset);
 
 
 			auto unity_core_assembly = il2cpp_domain_assembly_open(domain, "UnityEngine.CoreModule.dll");
@@ -1001,32 +821,6 @@ namespace
 			// MH_CreateHook(set_name_addr_offset, set_name_hook, &set_name_orig);
 			// MH_EnableHook(set_name_addr_offset);
 
-
-
-
-
-			// auto monobehavior_class = il2cpp_class_from_name(unity_core_image, "UnityEngine", "MonoBehaviour");
-			// printf("MonoBehaviour: %p\n", monobehavior_class);
-
-
-			// auto getscriptclassname_addr = il2cpp_class_get_method_from_name(monobehavior_class, "GetScriptClassName", 0)->methodPointer;
-			// printf("getscriptclassname_addr: %p\n", getscriptclassname_addr);
-
-			// auto getscriptclassname_addr_offset = reinterpret_cast<void*>(getscriptclassname_addr);
-			// printf("getscriptclassname_addr_offset: %p\n", getscriptclassname_addr_offset);
-
-			// MH_CreateHook(getscriptclassname_addr_offset, getscriptclassname_hook, &getscriptclassname_orig);
-			// MH_EnableHook(getscriptclassname_addr_offset);
-
-
-			// auto setenabled_addr = il2cpp_class_get_method_from_name(monobehavior_class, "set_enabled", 1)->methodPointer;
-			// printf("setenabled_addr: %p\n", setenabled_addr);
-
-			// auto setenabled_addr_offset = reinterpret_cast<void*>(setenabled_addr);
-			// printf("setenabled_addr_offset: %p\n", setenabled_addr_offset);
-
-			// MH_CreateHook(setenabled_addr_offset, setenabled_hook, &setenabled_orig);
-			// MH_EnableHook(setenabled_addr_offset);
 
 
 			auto assembly2 = il2cpp_domain_assembly_open(domain, "UnityEngine.TextRenderingModule.dll");
@@ -1059,60 +853,6 @@ namespace
 			printf("uma_image: %p\n", uma_image);
 
 
-
-
-
-
-			auto footerbutton_class = il2cpp_class_from_name(uma_image, "Gallop", "FooterButton");
-			printf("FooterButton: %p\n", footerbutton_class);
-
-
-			auto footerbutton_setnotifmessage_addr = il2cpp_class_get_method_from_name(footerbutton_class, "SetNotificationMessage", 1)->methodPointer;
-			printf("footerbutton_setnotifmessage_addr: %p\n", footerbutton_setnotifmessage_addr);
-
-			auto footerbutton_setnotifmessage_addr_offset = reinterpret_cast<void*>(footerbutton_setnotifmessage_addr);
-			printf("footerbutton_setnotifmessage_addr_offset: %p\n", footerbutton_setnotifmessage_addr_offset);
-
-			MH_CreateHook(footerbutton_setnotifmessage_addr_offset, footerbutton_setnotifmessage_hook, &footerbutton_setnotifmessage_orig);
-			MH_EnableHook(footerbutton_setnotifmessage_addr_offset);
-
-
-			auto footerbutton_gbbafbl_addr = il2cpp_class_get_method_from_name(footerbutton_class, "GetBaseBottonAndFrmButtonLabel", 2)->methodPointer;
-			printf("footerbutton_gbbafbl_addr: %p\n", footerbutton_gbbafbl_addr);
-
-			auto footerbutton_gbbafbl_addr_offset = reinterpret_cast<void*>(footerbutton_gbbafbl_addr);
-			printf("footerbutton_gbbafbl_addr_offset: %p\n", footerbutton_gbbafbl_addr_offset);
-
-			MH_CreateHook(footerbutton_gbbafbl_addr_offset, footerbutton_gbbafbl_hook, &footerbutton_gbbafbl_orig);
-			MH_EnableHook(footerbutton_gbbafbl_addr_offset);
-
-
-			auto footerbutton_initialize_addr = il2cpp_class_get_method_from_name(footerbutton_class, "Initialize", 4)->methodPointer;
-			printf("footerbutton_initialize_addr: %p\n", footerbutton_initialize_addr);
-
-			auto footerbutton_initialize_addr_offset = reinterpret_cast<void*>(footerbutton_initialize_addr);
-			printf("footerbutton_initialize_addr_offset: %p\n", footerbutton_initialize_addr_offset);
-
-			MH_CreateHook(footerbutton_initialize_addr_offset, footerbutton_initialize_hook, &footerbutton_initialize_orig);
-			MH_EnableHook(footerbutton_initialize_addr_offset);
-			
-
-
-			auto homeutil_class = il2cpp_class_from_name(uma_image, "Gallop", "HomeUtil");
-			printf("HomeUtil: %p\n", homeutil_class);
-
-			auto homeutil_text_addr = il2cpp_class_get_method_from_name(homeutil_class, "Text", 1)->methodPointer;
-			printf("homeutil_text_addr: %p\n", homeutil_text_addr);
-
-			auto homeutil_text_addr_offset = reinterpret_cast<void*>(homeutil_text_addr);
-			printf("homeutil_text_addr_offset: %p\n", homeutil_text_addr_offset);
-
-			MH_CreateHook(homeutil_text_addr_offset, homeutil_text_hook, &homeutil_text_orig);
-			MH_EnableHook(homeutil_text_addr_offset);
-
-
-
-
 			auto uimanager_class = il2cpp_class_from_name(uma_image, "Gallop", "UIManager");
 			printf("UIManager: %p\n", uimanager_class);
 
@@ -1138,8 +878,6 @@ namespace
 
 			MH_CreateHook(uimanager_SetHeaderTitleText2_addr_offset, uimanager_SetHeaderTitleText2_hook, &uimanager_SetHeaderTitleText2_orig);
 			MH_EnableHook(uimanager_SetHeaderTitleText2_addr_offset);
-
-
 
 
 			// LocalizeJP
@@ -1218,58 +956,6 @@ namespace
 			MH_CreateHook(textcommon_gettext_addr_offset, textcommon_gettext_hook, &textcommon_gettext_orig);
 			MH_EnableHook(textcommon_gettext_addr_offset);
 
-
-			auto bitmaptextvertexmove_class = il2cpp_class_from_name(uma_image, "Gallop", "BitmapTextVertexMove");
-			printf("BitmapTextVertexMove: %p\n", bitmaptextvertexmove_class);
-
-			auto bitmapvertexmove_changetext_addr = il2cpp_class_get_method_from_name(bitmaptextvertexmove_class, "ChangeText", 1)->methodPointer;
-			printf("bitmapvertexmove_changetext_addr: %p\n", bitmapvertexmove_changetext_addr);
-
-			auto bitmapvertexmove_changetext_addr_offset = reinterpret_cast<void*>(bitmapvertexmove_changetext_addr);
-			printf("bitmapvertexmove_changetext_addr_offset: %p\n", bitmapvertexmove_changetext_addr_offset);
-
-			MH_CreateHook(bitmapvertexmove_changetext_addr_offset, bitmapvertexmove_changetext_hook, &bitmapvertexmove_changetext_orig);
-			MH_EnableHook(bitmapvertexmove_changetext_addr_offset);
-
-
-			auto textmeshprouguicommon_class = il2cpp_class_from_name(uma_image, "Gallop", "TextMeshProUguiCommon");
-			printf("TextMeshProUguiCommon: %p\n", textmeshprouguicommon_class);
-
-			auto textmeshprouguicommon_settext_addr = il2cpp_class_get_method_from_name(textmeshprouguicommon_class, "set_text", 1)->methodPointer;
-			printf("textmeshprouguicommon_settext_addr: %p\n", textmeshprouguicommon_settext_addr);
-
-			auto textmeshprouguicommon_settext_addr_offset = reinterpret_cast<void*>(textmeshprouguicommon_settext_addr);
-			printf("textmeshprouguicommon_settext_addr_offset: %p\n", textmeshprouguicommon_settext_addr_offset);
-
-			MH_CreateHook(textmeshprouguicommon_settext_addr_offset, tmp_ugui_common_hook, &tmp_ugui_common_orig);
-			MH_EnableHook(textmeshprouguicommon_settext_addr_offset);
-
-
-
-			auto buttoncommon_class = il2cpp_class_from_name(uma_image, "Gallop", "ButtonCommon");
-			printf("ButtonCommon: %p\n", buttoncommon_class);
-
-			auto buttoncommon_update_addr = il2cpp_class_get_method_from_name(buttoncommon_class, "Update", 0)->methodPointer;
-			printf("buttoncommon_update_addr: %p\n", buttoncommon_update_addr);
-
-			auto buttoncommon_update_addr_offset = reinterpret_cast<void*>(buttoncommon_update_addr);
-			printf("buttoncommon_update_addr_offset: %p\n", buttoncommon_update_addr_offset);
-
-			// MH_CreateHook(buttoncommon_update_addr_offset, buttoncommon_update_hook, &buttoncommon_update_orig);
-			// MH_EnableHook(buttoncommon_update_addr_offset);
-
-
-			auto flashplayer_class = il2cpp_class_from_name(uma_image, "Gallop", "FlashPlayer");
-			printf("FlashPlayer: %p\n", flashplayer_class);
-
-			auto flashplayer_settext_addr = il2cpp_class_get_method_from_name(flashplayer_class, "SetText", 4)->methodPointer;
-			printf("flashplayer_settext_addr: %p\n", flashplayer_settext_addr);
-
-			auto flashplayer_settext_addr_offset = reinterpret_cast<void*>(flashplayer_settext_addr);
-			printf("flashplayer_settext_addr_offset: %p\n", flashplayer_settext_addr_offset);
-
-			MH_CreateHook(flashplayer_settext_addr_offset, flashplayer_settext_hook, &flashplayer_settext_orig);
-			MH_EnableHook(flashplayer_settext_addr_offset);
 
 
 			import_translations();

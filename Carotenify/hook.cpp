@@ -365,13 +365,21 @@ namespace
 	void* populate_with_errors_orig = nullptr;
 	bool populate_with_errors_hook(void* _this, Il2CppString* str, TextGenerationSettings_t* settings, void* context)
 	{
-		printf("Draw: %s\n", il2cppstring_to_utf8(str->start_char).c_str());
-
 		// Resize font
 		// settings->fontSize = round(settings->fontSize * 0.9f);
 
 		std::string str_utf8 = il2cppstring_to_utf8(str->start_char);
 		std::string str_json = il2cppstring_to_jsonstring(str->start_char);
+
+		
+		printf("Draw: %s\n", str_utf8.c_str());
+
+
+		// if (str_utf8 == "育成中のデータを削除します")
+		// {
+		// 	stacktrace();
+		// }
+
 		
 		size_t debug_pos = str_utf8.find("<debug>");
 		if (debug_pos != std::string::npos)

@@ -201,7 +201,15 @@ namespace
 
 	void import_translations()
 	{
-		std::string file_name = "translations.txt";
+		std::string file_name = "assembly_dump.json";
+		if (file_exists(file_name))
+		{
+			debug_mode = true;
+		} else {
+			debug_mode = false;
+		}
+
+		file_name = "translations.txt";
 
 		if (!file_exists(file_name))
 		{
@@ -357,7 +365,7 @@ namespace
 	void* populate_with_errors_orig = nullptr;
 	bool populate_with_errors_hook(void* _this, Il2CppString* str, TextGenerationSettings_t* settings, void* context)
 	{
-		// printf("populate_with_errors_hook\n");
+		printf("Draw: %s\n", il2cppstring_to_utf8(str->start_char).c_str());
 
 		// Resize font
 		// settings->fontSize = round(settings->fontSize * 0.9f);
@@ -531,44 +539,62 @@ namespace
 	{
 		// printf("localize_jp_get_hook\n");
 
-		// std::string textid_string = text_id_to_string[id];
-		// if (textid_string == "Outgame0100")
-		// {
-		// 	printf("!!!Found Outgame0100!!!");
-		// 	stacktrace();
-		// }
-
-		Il2CppString* orig_text = reinterpret_cast<decltype(localize_jp_get_hook)*>(localize_jp_get_orig)(id);
+		Il2CppString* out_text = reinterpret_cast<decltype(localize_jp_get_hook)*>(localize_jp_get_orig)(id);
 
 		// printf("=== JP GET ===");
 		// printf("ID: %d\n", id);
-		if (text_id_to_string.find(id) == text_id_to_string.end())
+		if (text_id_to_string.find(id) != text_id_to_string.end())
 		{
-			// printf("ID not found\n");
-			return orig_text;
-		}
+			std::string textid_string = text_id_to_string[id];
+			// printf("TextIdString: %s\n", textid_string.c_str());
 
-		std::string textid_string = text_id_to_string[id];
-		// printf("TextIdString: %s\n", textid_string.c_str());
-		
-		if (text_id_string_to_translation.find(textid_string) == text_id_string_to_translation.end())
-		{
-			// printf("Translation not found\n");
-			if (debug_mode)
+
+			std::string compare_str = "SingleMode0017";
+			if (textid_string == compare_str)
 			{
-				return il2cpp_string_new((textid_string + "<debug>" + il2cppstring_to_utf8(orig_text->start_char)).data());
+				printf("!!!Found SingleMode0017!!!");
+				stacktrace();
 			}
-			return orig_text;
+
+
+			
+			if (text_id_string_to_translation.find(textid_string) == text_id_string_to_translation.end())
+			{
+				// printf("Translation not found\n");
+				if (debug_mode)
+				{
+					out_text = il2cpp_string_new((textid_string + "<debug>" + il2cppstring_to_utf8(out_text->start_char)).data());
+				}
+			} else
+			{
+				std::string translation = text_id_string_to_translation[textid_string];
+				// printf("Translation: %s\n", translation.c_str());
+
+				if (debug_mode)
+				{
+					out_text = il2cpp_string_new((textid_string + "<debug>" + translation).data());
+				} else {
+					out_text = il2cpp_string_new(translation.data());
+				}
+				
+			}
+
+		} else {
+			if (debug_mode){
+				// Convert int id to string
+				std::string textid_string = std::to_string(id);
+
+				out_text = il2cpp_string_new((textid_string + "<debug>" + il2cppstring_to_utf8(out_text->start_char)).data());
+			}
 		}
 
-		std::string translation = text_id_string_to_translation[textid_string];
-		// printf("Translation: %s\n", translation.c_str());
-
-		if (debug_mode)
-		{
-			return il2cpp_string_new((textid_string + "<debug>" + translation).data());
+		// Print ID
+		if (id == 1030 || id == 1107){}
+		else if (debug_mode) {
+			printf("Fetch %d: %s\n", id, il2cppstring_to_utf8(out_text->start_char).c_str());
 		}
-		return il2cpp_string_new(translation.data());
+
+		return out_text;
 	}
 
 
@@ -576,14 +602,16 @@ namespace
 	{
 		printf("Indexing text\n");
 		std::string file_name = "assembly_dump.json";
+		bool print_flag = false;
+		debug_mode = false;
 		if (file_exists(file_name))
 		{
-			debug_mode = true;
+			print_flag = true;
 			printf("Dumping text to file.\n");
 		}
 
 		std::ofstream outfile;
-		if (debug_mode)
+		if (print_flag)
 		{
 			outfile.open(file_name, std::ios_base::trunc);
 			outfile << "{\n";
@@ -610,7 +638,7 @@ namespace
 
 			text_id_to_string[i] = textid_string_utf8;
 
-			if (debug_mode)
+			if (print_flag)
 			{
 				if (!first)
 				{
@@ -622,10 +650,11 @@ namespace
 			}
 		}
 
-		if (debug_mode)
+		if (print_flag)
 		{
 			outfile << "\n}";
 			outfile.close();
+			debug_mode = true;
 		}
 
 		printf("Indexing text done\n");
@@ -745,6 +774,36 @@ namespace
 		}
 
 		return reinterpret_cast<decltype(uimanager_SetHeaderTitleText1_hook)*>(uimanager_SetHeaderTitleText1_orig)(_this, text_id, guide_id);
+	}
+
+
+	void bootstrap_carrot_juicer()
+	{
+		const auto libnative_module = GetModuleHandle(L"libnative.dll");
+		printf("libnative.dll at %p\n", libnative_module);
+		if (libnative_module == nullptr)
+		{
+			return;
+		}
+
+		const auto LZ4_decompress_safe_ext_ptr = GetProcAddress(libnative_module, "LZ4_decompress_safe_ext");
+		printf("LZ4_decompress_safe_ext at %p\n", LZ4_decompress_safe_ext_ptr);
+		if (LZ4_decompress_safe_ext_ptr == nullptr)
+		{
+			return;
+		}
+		MH_CreateHook(LZ4_decompress_safe_ext_ptr, LZ4_decompress_safe_ext_hook, &LZ4_decompress_safe_ext_orig);
+		MH_EnableHook(LZ4_decompress_safe_ext_ptr);
+
+		const auto LZ4_compress_default_ext_ptr = GetProcAddress(libnative_module, "LZ4_compress_default_ext");
+		printf("LZ4_compress_default_ext at %p\n", LZ4_compress_default_ext_ptr);
+		if (LZ4_compress_default_ext_ptr == nullptr)
+		{
+			return;
+		}
+		MH_CreateHook(LZ4_compress_default_ext_ptr, LZ4_compress_default_ext_hook, &LZ4_compress_default_ext_orig);
+		MH_EnableHook(LZ4_compress_default_ext_ptr);
+
 	}
 
 
@@ -959,6 +1018,8 @@ namespace
 
 
 			import_translations();
+
+			bootstrap_carrot_juicer();
 
 			MH_DisableHook(LoadLibraryW);
 			MH_RemoveHook(LoadLibraryW);

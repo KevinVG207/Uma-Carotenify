@@ -18,7 +18,22 @@ using namespace std::literals;
 
 namespace
 {
-	il2cpp_string_new_t il2cpp_string_new = nullptr;
+	il2cpp_domain_get_t il2cpp_domain_get;
+	il2cpp_domain_assembly_open_t il2cpp_domain_assembly_open;
+	il2cpp_assembly_get_image_t il2cpp_assembly_get_image;
+	il2cpp_class_from_name_t il2cpp_class_from_name;
+	il2cpp_class_get_method_from_name_t il2cpp_class_get_method_from_name;
+	il2cpp_class_get_nested_types_t il2cpp_class_get_nested_types;
+	il2cpp_class_get_field_from_name_t il2cpp_class_get_field_from_name;
+	il2cpp_class_enum_basetype_t il2cpp_class_enum_basetype;
+	il2cpp_class_get_methods_t il2cpp_class_get_methods;
+	il2cpp_string_new_t il2cpp_string_new;
+	il2cpp_method_get_param_count_t il2cpp_method_get_param_count;
+	il2cpp_type_get_name_t il2cpp_type_get_name;
+	il2cpp_method_get_param_t il2cpp_method_get_param;
+
+
+
 	std::map<int, std::string> text_id_to_string;
 	std::map<std::string, std::string> text_id_string_to_translation;
 	bool tl_first_check = true;
@@ -26,10 +41,107 @@ namespace
 	std::set<Il2CppString*> stringid_pointers;
 	bool debug_mode = false;
 
+	uintptr_t find_class_method_with_name_and_types(void* class_ptr, const char* method_name, const Il2CppTypeEnum method_types[])
+	{
+		uintptr_t return_ptr = 0;
+
+		void* iter = nullptr;
+		MethodInfo* method = nullptr;
+		while ((method = il2cpp_class_get_methods(class_ptr, &iter)) != nullptr)
+		{
+			// Check if method name matches
+			const char* compare_method_name = method->name;
+			if (strcmp(method_name, compare_method_name) != 0)
+			{
+				continue;
+			}
+
+			// Check if method types matches
+			uint32_t param_count = il2cpp_method_get_param_count(method);
+			// Quick check if param count matches
+			if (param_count != sizeof(method_types) / sizeof(method_types[0]))
+			{
+				continue;
+			}
+
+			bool match = true;
+			for (uint32_t i = 0; i < param_count; i++)
+			{
+				auto param = il2cpp_method_get_param(method, i);
+				auto param_type = param->type;
+				auto compare_type = method_types[i];
+				if (param_type != compare_type)
+				{
+					match = false;
+					break;
+				}
+			}
+
+			if (!match)
+			{
+				continue;
+			}
+
+			// Found method
+			return_ptr = method->methodPointer;
+			break;
+
+		}
+
+		return return_ptr;
+	}
+
+	void print_class_methods_with_types(void* class_ptr)
+	{
+		void* iter = nullptr;
+		MethodInfo* method = nullptr;
+		while ((method = il2cpp_class_get_methods(class_ptr, &iter)) != nullptr)
+		{
+			printf("Method: %s\n", method->name);
+
+			uint32_t param_count = il2cpp_method_get_param_count(method);
+			printf("Param count: %d\n", param_count);
+
+			for (uint32_t i = 0; i < param_count; i++)
+			{
+				auto param = il2cpp_method_get_param(method, i);
+				auto param_type = param->type;
+				// Print as hexadecimal
+				printf("Param type: %x\n", param_type);
+			}
+		}
+	}
+
+	std::string remove_all_tags(std::string in_str)
+	{
+		// Remove all <> tags
+		while (true)
+		{
+			size_t start_pos = in_str.find('<');
+			if (start_pos == std::string::npos)
+			{
+				break;
+			}
+			size_t end_pos = in_str.find('>', start_pos);
+			if (end_pos == std::string::npos)
+			{
+				break;
+			}
+			in_str.erase(start_pos, end_pos - start_pos + 1);
+		}
+
+		return in_str;
+	}
+
+	Il2CppString* (*environment_get_stacktrace)();
+
+	void stacktrace()
+	{
+		printf("%ls", environment_get_stacktrace()->start_char);
+	}
+
 	void* find_nested_class_by_name(void* klass, const char* name)
 	{
-		il2cpp_class_get_nested_types_t il2cpp_class_get_nested_types = reinterpret_cast<il2cpp_class_get_nested_types_t>(GetProcAddress(GetModuleHandle(L"GameAssembly.dll"), "il2cpp_class_get_nested_types"));
-
 		void* iter{};
 		while (const auto curNestedClass = il2cpp_class_get_nested_types(klass, &iter))
 		{
@@ -234,6 +346,14 @@ namespace
 		return ret;
 	}
 
+
+	void* populate_orig = nullptr;
+	bool populate_hook(void* _this, Il2CppString* str, TextGenerationSettings_t* settings){
+		printf("populate_hook: %s\n", il2cppstring_to_utf8(str->start_char).c_str());
+
+		return reinterpret_cast<decltype(populate_hook)*>(populate_orig)(_this, str, settings);
+	}
+
 	void* populate_with_errors_orig = nullptr;
 	bool populate_with_errors_hook(void* _this, Il2CppString* str, TextGenerationSettings_t* settings, void* context)
 	{
@@ -254,8 +374,9 @@ namespace
 
 		SHA256 sha256;
 		auto str_hash = sha256(str_utf8);
-		printf("PopulateWithErrors: %s\n", str_json.c_str());
-		printf("^ Hash: %s\n", str_hash.c_str());
+		// TODO: Turn this back on
+		// printf("PopulateWithErrors: %s\n", str_json.c_str());
+		// printf("^ Hash: %s\n", str_hash.c_str());
 
 
 		if (text_id_string_to_translation.find(str_hash) != text_id_string_to_translation.end())
@@ -409,6 +530,13 @@ namespace
 	Il2CppString* localize_jp_get_hook(int id)
 	{
 		// printf("localize_jp_get_hook\n");
+
+		// std::string textid_string = text_id_to_string[id];
+		// if (textid_string == "Outgame0100")
+		// {
+		// 	printf("!!!Found Outgame0100!!!");
+		// 	stacktrace();
+		// }
 
 		Il2CppString* orig_text = reinterpret_cast<decltype(localize_jp_get_hook)*>(localize_jp_get_orig)(id);
 
@@ -572,6 +700,54 @@ namespace
 		return il2cpp_string_new(translation.data());
 	}
 
+
+	void* to_string_orig = nullptr;
+	Il2CppString* to_string_hook(void* _this)
+	{
+		return reinterpret_cast<decltype(to_string_hook)*>(to_string_orig)(_this);
+	}
+
+	void* set_name_orig = nullptr;
+	void* set_name_hook(void* _this, Il2CppString* str)
+	{
+		printf("set_name_hook: %s\n", il2cppstring_to_utf8(str->start_char).c_str());
+
+		Il2CppString* obj_str = to_string_hook(_this);
+		printf("obj_str: %s\n", il2cppstring_to_utf8(obj_str->start_char).c_str());
+
+		return reinterpret_cast<decltype(set_name_hook)*>(set_name_orig)(_this, str);
+	}
+
+
+	void* uimanager_SetHeaderTitleText2_orig = nullptr;
+	void* uimanager_SetHeaderTitleText2_hook(void* _this, Il2CppString* text, void* guide_id)
+	{
+		// printf("uimanager_SetHeaderTitleText2_hook: %s\n", il2cppstring_to_utf8(text->start_char).c_str());
+		return reinterpret_cast<decltype(uimanager_SetHeaderTitleText2_hook)*>(uimanager_SetHeaderTitleText2_orig)(_this, text, guide_id);
+	}
+
+
+	void* uimanager_SetHeaderTitleText1_orig = nullptr;
+	void* uimanager_SetHeaderTitleText1_hook(void* _this, int text_id, void* guide_id)
+	{
+		// printf("uimanager_SetHeaderTitleText1_hook: %d\n", text_id);
+		// If text_id in text_id_to_string, then use that instead
+		if (text_id_to_string.find(text_id) != text_id_to_string.end())
+		{
+			std::string textid_string = text_id_to_string[text_id];
+			if (text_id_string_to_translation.find(textid_string) != text_id_string_to_translation.end())
+			{
+				printf("Found translation for %s\n", textid_string.c_str());
+				std::string translation = text_id_string_to_translation[textid_string];
+				translation = remove_all_tags(translation);
+				return uimanager_SetHeaderTitleText2_hook(_this, il2cpp_string_new(translation.data()), guide_id);
+			}
+		}
+
+		return reinterpret_cast<decltype(uimanager_SetHeaderTitleText1_hook)*>(uimanager_SetHeaderTitleText1_orig)(_this, text_id, guide_id);
+	}
+
+
 	void* load_library_w_orig = nullptr;
 
 	HMODULE __stdcall load_library_w_hook(const wchar_t* path)
@@ -584,22 +760,67 @@ namespace
 			const auto game_assembly_module = GetModuleHandle(L"GameAssembly.dll");
 
 
-			const il2cpp_domain_get_t il2cpp_domain_get = reinterpret_cast<il2cpp_domain_get_t>(GetProcAddress(game_assembly_module, "il2cpp_domain_get"));
-			const il2cpp_domain_assembly_open_t il2cpp_domain_assembly_open = reinterpret_cast<il2cpp_domain_assembly_open_t>(GetProcAddress(game_assembly_module, "il2cpp_domain_assembly_open"));
-			const il2cpp_assembly_get_image_t il2cpp_assembly_get_image = reinterpret_cast<il2cpp_assembly_get_image_t>(GetProcAddress(game_assembly_module, "il2cpp_assembly_get_image"));
-			const il2cpp_class_from_name_t il2cpp_class_from_name = reinterpret_cast<il2cpp_class_from_name_t>(GetProcAddress(game_assembly_module, "il2cpp_class_from_name"));
-			const il2cpp_class_get_method_from_name_t il2cpp_class_get_method_from_name = reinterpret_cast<il2cpp_class_get_method_from_name_t>(GetProcAddress(game_assembly_module, "il2cpp_class_get_method_from_name"));
-			const il2cpp_class_get_nested_types_t il2cpp_class_get_nested_types = reinterpret_cast<il2cpp_class_get_nested_types_t>(GetProcAddress(game_assembly_module, "il2cpp_class_get_nested_types"));
-			const il2cpp_class_get_field_from_name_t il2cpp_class_get_field_from_name = reinterpret_cast<il2cpp_class_get_field_from_name_t>(GetProcAddress(game_assembly_module, "il2cpp_class_get_field_from_name"));
-			const il2cpp_class_enum_basetype_t il2cpp_class_enum_basetype = reinterpret_cast<il2cpp_class_enum_basetype_t>(GetProcAddress(game_assembly_module, "il2cpp_class_enum_basetype"));
-			const il2cpp_class_get_methods_t il2cpp_class_get_methods = reinterpret_cast<il2cpp_class_get_methods_t>(GetProcAddress(game_assembly_module, "il2cpp_class_get_methods"));
+			il2cpp_domain_get = reinterpret_cast<il2cpp_domain_get_t>(GetProcAddress(game_assembly_module, "il2cpp_domain_get"));
+			il2cpp_domain_assembly_open = reinterpret_cast<il2cpp_domain_assembly_open_t>(GetProcAddress(game_assembly_module, "il2cpp_domain_assembly_open"));
+			il2cpp_assembly_get_image = reinterpret_cast<il2cpp_assembly_get_image_t>(GetProcAddress(game_assembly_module, "il2cpp_assembly_get_image"));
+			il2cpp_class_from_name = reinterpret_cast<il2cpp_class_from_name_t>(GetProcAddress(game_assembly_module, "il2cpp_class_from_name"));
+			il2cpp_class_get_method_from_name = reinterpret_cast<il2cpp_class_get_method_from_name_t>(GetProcAddress(game_assembly_module, "il2cpp_class_get_method_from_name"));
+			il2cpp_class_get_nested_types = reinterpret_cast<il2cpp_class_get_nested_types_t>(GetProcAddress(game_assembly_module, "il2cpp_class_get_nested_types"));
+			il2cpp_class_get_field_from_name = reinterpret_cast<il2cpp_class_get_field_from_name_t>(GetProcAddress(game_assembly_module, "il2cpp_class_get_field_from_name"));
+			il2cpp_class_enum_basetype = reinterpret_cast<il2cpp_class_enum_basetype_t>(GetProcAddress(game_assembly_module, "il2cpp_class_enum_basetype"));
+			il2cpp_class_get_methods = reinterpret_cast<il2cpp_class_get_methods_t>(GetProcAddress(game_assembly_module, "il2cpp_class_get_methods"));
 			il2cpp_string_new = reinterpret_cast<il2cpp_string_new_t>(GetProcAddress(game_assembly_module, "il2cpp_string_new"));
+			il2cpp_method_get_param_count = reinterpret_cast<il2cpp_method_get_param_count_t>(GetProcAddress(game_assembly_module, "il2cpp_method_get_param_count"));
+			il2cpp_type_get_name = reinterpret_cast<il2cpp_type_get_name_t>(GetProcAddress(game_assembly_module, "il2cpp_type_get_name"));
+			il2cpp_method_get_param = reinterpret_cast<il2cpp_method_get_param_t>(GetProcAddress(game_assembly_module, "il2cpp_method_get_param"));
 
 			printf("1\n");
 
 			auto domain = il2cpp_domain_get();
 			// Print domain
 			printf("Domain: %p\n", domain);
+
+
+			auto mscorlib_assembly = il2cpp_domain_assembly_open(domain, "mscorlib.dll");
+			printf("mscorlib Assembly: %p\n", mscorlib_assembly);
+			auto mscorlib_image = il2cpp_assembly_get_image(mscorlib_assembly);
+			printf("mscorlib Image: %p\n", mscorlib_image);
+
+			auto environment_class = il2cpp_class_from_name(mscorlib_image, "System", "Environment");
+			printf("Environment: %p\n", environment_class);
+
+			auto stack_trace_addr = il2cpp_class_get_method_from_name(environment_class, "get_StackTrace", 0)->methodPointer;
+			environment_get_stacktrace = reinterpret_cast<decltype(environment_get_stacktrace)>(stack_trace_addr);
+
+
+
+			auto unity_core_assembly = il2cpp_domain_assembly_open(domain, "UnityEngine.CoreModule.dll");
+			printf("Unity Core Assembly: %p\n", unity_core_assembly);
+			auto unity_core_image = il2cpp_assembly_get_image(unity_core_assembly);
+			printf("Unity Core Image: %p\n", unity_core_image);
+
+			auto object_class = il2cpp_class_from_name(unity_core_image, "UnityEngine", "Object");
+			printf("Object: %p\n", object_class);
+
+			auto to_string_addr = il2cpp_class_get_method_from_name(object_class, "ToString", 0)->methodPointer;
+			printf("to_string_addr: %p\n", to_string_addr);
+
+			auto to_string_addr_offset = reinterpret_cast<void*>(to_string_addr);
+			printf("to_string_addr_offset: %p\n", to_string_addr_offset);
+
+			MH_CreateHook(to_string_addr_offset, to_string_hook, &to_string_orig);
+			MH_EnableHook(to_string_addr_offset);
+
+
+			auto set_name_addr = il2cpp_class_get_method_from_name(object_class, "set_name", 1)->methodPointer;
+			printf("set_name_addr: %p\n", set_name_addr);
+
+			auto set_name_addr_offset = reinterpret_cast<void*>(set_name_addr);
+			printf("set_name_addr_offset: %p\n", set_name_addr_offset);
+
+			// MH_CreateHook(set_name_addr_offset, set_name_hook, &set_name_orig);
+			// MH_EnableHook(set_name_addr_offset);
+
 
 
 			auto assembly2 = il2cpp_domain_assembly_open(domain, "UnityEngine.TextRenderingModule.dll");
@@ -616,6 +837,13 @@ namespace
 			MH_EnableHook(populate_with_errors_addr_offset);
 
 
+			auto populate_addr = il2cpp_class_get_method_from_name(text_generator_class, "Populate", 2)->methodPointer;
+			printf("populate_addr: %p\n", populate_addr);
+			auto populate_addr_offset = reinterpret_cast<void*>(populate_addr);
+
+			MH_CreateHook(populate_addr_offset, populate_hook, &populate_orig);
+			MH_EnableHook(populate_addr_offset);
+
 
 			// Uma Assembly
 			auto uma_assembly = il2cpp_domain_assembly_open(domain, "umamusume.dll");
@@ -623,6 +851,33 @@ namespace
 
 			auto uma_image = il2cpp_assembly_get_image(uma_assembly);
 			printf("uma_image: %p\n", uma_image);
+
+
+			auto uimanager_class = il2cpp_class_from_name(uma_image, "Gallop", "UIManager");
+			printf("UIManager: %p\n", uimanager_class);
+
+			// print_class_methods_with_types(uimanager_class);
+
+			const Il2CppTypeEnum types[2] = { Il2CppTypeEnum::IL2CPP_TYPE_VALUETYPE, Il2CppTypeEnum::IL2CPP_TYPE_VALUETYPE };
+			auto uimanager_SetHeaderTitleText1_addr = find_class_method_with_name_and_types(uimanager_class, "SetHeaderTitleText", types);
+			printf("uimanager_SetHeaderTitleText1_addr: %p\n", uimanager_SetHeaderTitleText1_addr);
+
+			auto uimanager_SetHeaderTitleText1_addr_offset = reinterpret_cast<void*>(uimanager_SetHeaderTitleText1_addr);
+			printf("uimanager_SetHeaderTitleText1_addr_offset: %p\n", uimanager_SetHeaderTitleText1_addr_offset);
+
+			MH_CreateHook(uimanager_SetHeaderTitleText1_addr_offset, uimanager_SetHeaderTitleText1_hook, &uimanager_SetHeaderTitleText1_orig);
+			MH_EnableHook(uimanager_SetHeaderTitleText1_addr_offset);
+
+
+			const Il2CppTypeEnum types2[2] = { Il2CppTypeEnum::IL2CPP_TYPE_STRING, Il2CppTypeEnum::IL2CPP_TYPE_VALUETYPE };
+			auto uimanager_SetHeaderTitleText2_addr = find_class_method_with_name_and_types(uimanager_class, "SetHeaderTitleText", types2);
+			printf("uimanager_SetHeaderTitleText2_addr: %p\n", uimanager_SetHeaderTitleText2_addr);
+
+			auto uimanager_SetHeaderTitleText2_addr_offset = reinterpret_cast<void*>(uimanager_SetHeaderTitleText2_addr);
+			printf("uimanager_SetHeaderTitleText2_addr_offset: %p\n", uimanager_SetHeaderTitleText2_addr_offset);
+
+			MH_CreateHook(uimanager_SetHeaderTitleText2_addr_offset, uimanager_SetHeaderTitleText2_hook, &uimanager_SetHeaderTitleText2_orig);
+			MH_EnableHook(uimanager_SetHeaderTitleText2_addr_offset);
 
 
 			// LocalizeJP
@@ -700,6 +955,7 @@ namespace
 
 			MH_CreateHook(textcommon_gettext_addr_offset, textcommon_gettext_hook, &textcommon_gettext_orig);
 			MH_EnableHook(textcommon_gettext_addr_offset);
+
 
 
 			import_translations();

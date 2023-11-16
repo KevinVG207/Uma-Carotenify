@@ -36,10 +36,16 @@ namespace
 
 	std::map<int, std::string> text_id_to_string;
 	std::map<std::string, std::string> text_id_string_to_translation;
+	std::map<std::string, std::string> text_id_string_to_original;
 	bool tl_first_check = true;
 	std::filesystem::file_time_type tl_last_modified;
 	std::set<Il2CppString*> stringid_pointers;
 	bool debug_mode = false;
+	void* last_text_list_ptr = nullptr;
+
+	std::set<std::string> do_not_replace_strings = {
+		"SingleMode418033"
+	};
 
 	uintptr_t find_class_method_with_name_and_types(void* class_ptr, const char* method_name, const Il2CppTypeEnum method_types[])
 	{
@@ -112,32 +118,50 @@ namespace
 		}
 	}
 
-	std::string remove_all_tags(std::string in_str)
+	// copy-pasted from https://stackoverflow.com/questions/3418231/replace-part-of-a-string-with-another-string
+	void replaceAll(std::string& str, const std::string& from, const std::string& to)
+	{
+		if (from.empty())
+			return;
+		size_t start_pos = 0;
+		while ((start_pos = str.find(from, start_pos)) != std::string::npos)
+		{
+			str.replace(start_pos, from.length(), to);
+			start_pos += to.length(); // In case 'to' contains 'from', like replacing 'x' with 'yx'
+		}
+	}
+
+
+	void remove_all_tags(std::string in_str)
 	{
 		// Remove all <> tags
-		while (true)
-		{
-			size_t start_pos = in_str.find('<');
-			if (start_pos == std::string::npos)
-			{
-				break;
-			}
-			size_t end_pos = in_str.find('>', start_pos);
-			if (end_pos == std::string::npos)
-			{
-				break;
-			}
-			in_str.erase(start_pos, end_pos - start_pos + 1);
-		}
-
-		return in_str;
+		replaceAll(in_str, "<res>", "");
+		replaceAll(in_str, "<a7>", "");
+		replaceAll(in_str, "<a8>", "");
+		replaceAll(in_str, "<a9>", "");
+		replaceAll(in_str, "<a4>", "");
+		replaceAll(in_str, "<a5>", "");
+		replaceAll(in_str, "<a6>", "");
+		replaceAll(in_str, "<a1>", "");
+		replaceAll(in_str, "<a2>", "");
+		replaceAll(in_str, "<a3>", "");
+		replaceAll(in_str, "<nb>", "");
+		replaceAll(in_str, "<ho>", "");
+		replaceAll(in_str, "<nho>", "");
+		replaceAll(in_str, "<vo>", "");
+		replaceAll(in_str, "<nvo>", "");
+		replaceAll(in_str, "<oob>", "");
+		replaceAll(in_str, "<ub>", "");
+		replaceAll(in_str, "<slogan>", "");
+		replaceAll(in_str, "<br>", "");
+		replaceAll(in_str, "<force>", "");
 	}
 
 	Il2CppString* (*environment_get_stacktrace)();
 
 	void stacktrace()
 	{
-		printf("%ls", environment_get_stacktrace()->start_char);
+		printf("%ls\n", environment_get_stacktrace()->start_char);
 	}
 
 	void* find_nested_class_by_name(void* klass, const char* name)
@@ -162,19 +186,6 @@ namespace
 		return file_exists;
 	}
 
-
-	// copy-pasted from https://stackoverflow.com/questions/3418231/replace-part-of-a-string-with-another-string
-	void replaceAll(std::string& str, const std::string& from, const std::string& to)
-	{
-		if (from.empty())
-			return;
-		size_t start_pos = 0;
-		while ((start_pos = str.find(from, start_pos)) != std::string::npos)
-		{
-			str.replace(start_pos, from.length(), to);
-			start_pos += to.length(); // In case 'to' contains 'from', like replacing 'x' with 'yx'
-		}
-	}
 
 	std::string il2cppstring_to_utf8(std::wstring str)
 	{
@@ -259,10 +270,10 @@ namespace
 			replaceAll(translation, "\\r", "\r");
 			replaceAll(translation, "\\\"", "\"");
 
-			if (translation.find('{') != std::string::npos)
-			{
-				translation = "<force>" + translation;
-			}
+			// if (translation.find('{') != std::string::npos)
+			// {
+			// 	translation = "<force>" + translation;
+			// }
 
 			text_id_string_to_translation[textidstring] = translation;
 		}
@@ -354,6 +365,34 @@ namespace
 		return ret;
 	}
 
+	void* move_next_orig = nullptr;
+	bool move_next_hook(void* _this)
+	{
+		if (last_text_list_ptr == _this)
+		{
+			// We are in the training cutscene enumerator
+			printf("TRAINING CUTSCENE ENUMERATOR!!\n");
+		}
+		return reinterpret_cast<decltype(move_next_hook)*>(move_next_orig)(_this);
+	}
+
+	void* to_string_orig = nullptr;
+	Il2CppString* to_string_hook(void* _this)
+	{
+		return reinterpret_cast<decltype(to_string_hook)*>(to_string_orig)(_this);
+	}
+
+	void* set_name_orig = nullptr;
+	void* set_name_hook(void* _this, Il2CppString* str)
+	{
+		printf("set_name_hook: %s\n", il2cppstring_to_utf8(str->start_char).c_str());
+
+		Il2CppString* obj_str = to_string_hook(_this);
+		printf("obj_str: %s\n", il2cppstring_to_utf8(obj_str->start_char).c_str());
+
+		return reinterpret_cast<decltype(set_name_hook)*>(set_name_orig)(_this, str);
+	}
+
 
 	void* populate_orig = nullptr;
 	bool populate_hook(void* _this, Il2CppString* str, TextGenerationSettings_t* settings){
@@ -362,44 +401,32 @@ namespace
 		return reinterpret_cast<decltype(populate_hook)*>(populate_orig)(_this, str, settings);
 	}
 
-	void* populate_with_errors_orig = nullptr;
-	bool populate_with_errors_hook(void* _this, Il2CppString* str, TextGenerationSettings_t* settings, void* context)
+	std::string handle_tags(std::string str_utf8, TextGenerationSettings_t* settings)
 	{
-		// Resize font
-		// settings->fontSize = round(settings->fontSize * 0.9f);
-
-		std::string str_utf8 = il2cppstring_to_utf8(str->start_char);
-		std::string str_json = il2cppstring_to_jsonstring(str->start_char);
-
-		
-		printf("Draw: %s\n", str_utf8.c_str());
-
-
-		// if (str_utf8 == "育成中のデータを削除します")
-		// {
-		// 	stacktrace();
-		// }
-
-		
-		size_t debug_pos = str_utf8.find("<debug>");
-		if (debug_pos != std::string::npos)
+		// Special case for training event result messages.
+		if (str_utf8.find("<res>") != std::string::npos)
 		{
-			// Remove all until <debug>
-			str_utf8 = str_utf8.substr(debug_pos + 7);
+			// If <res> appears more than 1 time
+			if (str_utf8.find("<res>") != str_utf8.rfind("<res>"))
+			{
+				// Workaround for log screen. This may mess up in other places!
+				// TODO: Maybe find a more robust solution?
+				replaceAll(str_utf8, "\n", "");
+
+				// Remove only the first instance of <res>
+				size_t start = str_utf8.find("<res>");
+				str_utf8.erase(start, 5);
+
+				replaceAll(str_utf8, "<res>", "\n");
+			} else {
+				replaceAll(str_utf8, "<res>", "");
+				replaceAll(str_utf8, "\n", "");
+			}
+
+			remove_all_tags(str_utf8);
+			return str_utf8;
 		}
 
-		SHA256 sha256;
-		auto str_hash = sha256(str_utf8);
-		// TODO: Turn this back on
-		// printf("PopulateWithErrors: %s\n", str_json.c_str());
-		// printf("^ Hash: %s\n", str_hash.c_str());
-
-
-		if (text_id_string_to_translation.find(str_hash) != text_id_string_to_translation.end())
-		{
-			// printf("Found hashed translation for %s\n", str_json.c_str());
-			str_utf8 = text_id_string_to_translation[str_hash];
-		}
 
 		if (str_utf8.find("<a7>") != std::string::npos)
 		{
@@ -455,22 +482,22 @@ namespace
 		if (str_utf8.find("<ho>") != std::string::npos)
 		{
 			replaceAll(str_utf8, "<ho>", "");
-			settings->horizontalOverflow = 0;
+			settings->horizontalOverflow = 1;
 		}
 		if (str_utf8.find("<nho>") != std::string::npos)
 		{
 			replaceAll(str_utf8, "<nho>", "");
-			settings->horizontalOverflow = 1;
+			settings->horizontalOverflow = 0;
 		}
 		if (str_utf8.find("<vo>") != std::string::npos)
 		{
 			replaceAll(str_utf8, "<vo>", "");
-			settings->verticalOverflow = 0;
+			settings->verticalOverflow = 1;
 		}
 		if (str_utf8.find("<nvo>") != std::string::npos)
 		{
 			replaceAll(str_utf8, "<nvo>", "");
-			settings->verticalOverflow = 1;
+			settings->verticalOverflow = 0;
 		}
 		if (str_utf8.find("<oob>") != std::string::npos)
 		{
@@ -510,6 +537,49 @@ namespace
 		{
 			replaceAll(str_utf8, "<force>", "");
 		}
+
+		return str_utf8;
+	}
+
+	void* populate_with_errors_orig = nullptr;
+	bool populate_with_errors_hook(void* _this, Il2CppString* str, TextGenerationSettings_t* settings, void* context)
+	{
+		// Resize font
+		// settings->fontSize = round(settings->fontSize * 0.9f);
+
+		std::string str_utf8 = il2cppstring_to_utf8(str->start_char);
+		std::string str_json = il2cppstring_to_jsonstring(str->start_char);
+
+		
+		printf("Draw: %s\n", str_utf8.c_str());
+
+
+		// if (str_utf8 == "育成中のデータを削除します")
+		// {
+		// 	stacktrace();
+		// }
+		
+		size_t debug_pos = str_utf8.find("<debug>");
+		if (debug_pos != std::string::npos)
+		{
+			// Remove all until <debug>
+			str_utf8 = str_utf8.substr(debug_pos + 7);
+		}
+
+		SHA256 sha256;
+		auto str_hash = sha256(str_utf8);
+		// TODO: Turn this back on
+		// printf("PopulateWithErrors: %s\n", str_json.c_str());
+		// printf("^ Hash: %s\n", str_hash.c_str());
+
+
+		if (text_id_string_to_translation.find(str_hash) != text_id_string_to_translation.end())
+		{
+			// printf("Found hashed translation for %s\n", str_json.c_str());
+			str_utf8 = text_id_string_to_translation[str_hash];
+		}
+
+		str_utf8 = handle_tags(str_utf8, settings);
 
 		Il2CppString* new_str = il2cpp_string_new(str_utf8.data());
 		settings->richText = true;
@@ -556,11 +626,17 @@ namespace
 			std::string textid_string = text_id_to_string[id];
 			// printf("TextIdString: %s\n", textid_string.c_str());
 
+			// Do not replace some special cases
+			if (do_not_replace_strings.find(textid_string) != do_not_replace_strings.end())
+			{
+				return out_text;
+			}
 
-			std::string compare_str = "SingleMode0017";
+
+			std::string compare_str = "CustomRace0003";
 			if (textid_string == compare_str)
 			{
-				printf("!!!Found SingleMode0017!!!");
+				printf("!!!Found CustomRace0003!!!\n");
 				stacktrace();
 			}
 
@@ -645,6 +721,7 @@ namespace
 			// printf("index %s: %s\n", textid_string_utf8.c_str(), jp_text_utf8.c_str());
 
 			text_id_to_string[i] = textid_string_utf8;
+			text_id_string_to_original[textid_string_utf8] = jp_text_utf8;
 
 			if (print_flag)
 			{
@@ -724,6 +801,19 @@ namespace
 			return orig_text;
 		}
 
+		// if (orig_text_utf8.find("{") != std::string::npos)
+		// {
+		// 	// Do not replace any format strings.
+		// 	return orig_text;
+		// }
+
+		// The format string may have already been formatted, so we need to check the original text.
+		if (text_id_string_to_original[textid_string_utf8].find("{") != std::string::npos)
+		{
+			// Do not replace any format strings.
+			return orig_text;
+		}
+
 		if (text_id_string_to_translation.find(textid_string_utf8) == text_id_string_to_translation.end())
 		{
 			return orig_text;
@@ -735,24 +825,6 @@ namespace
 			return il2cpp_string_new((textid_string_utf8 + "<debug>" + translation).data());
 		}
 		return il2cpp_string_new(translation.data());
-	}
-
-
-	void* to_string_orig = nullptr;
-	Il2CppString* to_string_hook(void* _this)
-	{
-		return reinterpret_cast<decltype(to_string_hook)*>(to_string_orig)(_this);
-	}
-
-	void* set_name_orig = nullptr;
-	void* set_name_hook(void* _this, Il2CppString* str)
-	{
-		printf("set_name_hook: %s\n", il2cppstring_to_utf8(str->start_char).c_str());
-
-		Il2CppString* obj_str = to_string_hook(_this);
-		printf("obj_str: %s\n", il2cppstring_to_utf8(obj_str->start_char).c_str());
-
-		return reinterpret_cast<decltype(set_name_hook)*>(set_name_orig)(_this, str);
 	}
 
 
@@ -776,12 +848,34 @@ namespace
 			{
 				printf("Found translation for %s\n", textid_string.c_str());
 				std::string translation = text_id_string_to_translation[textid_string];
-				translation = remove_all_tags(translation);
+				remove_all_tags(translation);
 				return uimanager_SetHeaderTitleText2_hook(_this, il2cpp_string_new(translation.data()), guide_id);
 			}
 		}
 
 		return reinterpret_cast<decltype(uimanager_SetHeaderTitleText1_hook)*>(uimanager_SetHeaderTitleText1_orig)(_this, text_id, guide_id);
+	}
+
+	void* tcc_get_text_list_orig = nullptr;
+	void* tcc_get_text_list_hook(void* _this)
+	{
+		void* ret = reinterpret_cast<decltype(tcc_get_text_list_hook)*>(tcc_get_text_list_orig)(_this);
+		return ret;
+	}
+
+	void* antext_settext_orig = nullptr;
+	void* antext_settext_hook(void* _this, Il2CppString* text)
+	{
+		printf("antext_settext_hook: %s\n", il2cppstring_to_utf8(text->start_char).c_str());
+		return reinterpret_cast<decltype(antext_settext_hook)*>(antext_settext_orig)(_this, text);
+	}
+
+	void* tcc_play_cut_orig = nullptr;
+	void* tcc_play_cut_hook(void* _this, void* play_info)
+	{
+		void* enumerator = reinterpret_cast<decltype(tcc_play_cut_hook)*>(tcc_play_cut_orig)(_this, play_info);
+		last_text_list_ptr = enumerator;
+		return enumerator;
 	}
 
 
@@ -858,6 +952,32 @@ namespace
 
 			auto stack_trace_addr = il2cpp_class_get_method_from_name(environment_class, "get_StackTrace", 0)->methodPointer;
 			environment_get_stacktrace = reinterpret_cast<decltype(environment_get_stacktrace)>(stack_trace_addr);
+
+
+			auto ienumerator_class = il2cpp_class_from_name(mscorlib_image, "System.Collections", "IEnumerator");
+			printf("IEnumerator: %p\n", ienumerator_class);
+
+			auto move_next_addr = il2cpp_class_get_method_from_name(ienumerator_class, "MoveNext", 0)->methodPointer;
+			printf("MoveNext: %p\n", move_next_addr);
+
+			auto move_next_addr_offset = reinterpret_cast<void*>(move_next_addr);
+			printf("MoveNext Offset: %p\n", move_next_addr_offset);
+
+			MH_CreateHook(move_next_addr_offset, move_next_hook, &move_next_orig);
+			MH_EnableHook(move_next_addr_offset);
+
+
+
+			// auto tmp_assembly = il2cpp_domain_assembly_open(domain, "Unity.TextMeshPro.dll");
+			// printf("tmp_assembly: %p\n", tmp_assembly);
+			// auto tmp_image = il2cpp_assembly_get_image(tmp_assembly);
+			// printf("tmp_image: %p\n", tmp_image);
+
+			// auto tmp_text_class = il2cpp_class_from_name(tmp_image, "TMPro", "TMP_Text");
+			// printf("TMP_Text: %p\n", tmp_text_class);
+
+			// print_class_methods_with_types(tmp_text_class);
+
 
 
 
@@ -1023,6 +1143,29 @@ namespace
 			MH_CreateHook(textcommon_gettext_addr_offset, textcommon_gettext_hook, &textcommon_gettext_orig);
 			MH_EnableHook(textcommon_gettext_addr_offset);
 
+
+
+			auto training_cutscene_controller_class = il2cpp_class_from_name(uma_image, "Gallop", "SingleModeMainTrainingCuttController");
+			printf("training_cutscene_controller_class: %p\n", training_cutscene_controller_class);
+
+			auto tcc_get_text_list_addr = il2cpp_class_get_method_from_name(training_cutscene_controller_class, "GetTrainingEffectMessageWindowTextList", 0)->methodPointer;
+			printf("tcc_get_text_list_addr: %p\n", tcc_get_text_list_addr);
+
+			auto tcc_get_text_list_addr_offset = reinterpret_cast<void*>(tcc_get_text_list_addr);
+			printf("tcc_get_text_list_addr_offset: %p\n", tcc_get_text_list_addr_offset);
+
+			MH_CreateHook(tcc_get_text_list_addr_offset, tcc_get_text_list_hook, &tcc_get_text_list_orig);
+			MH_EnableHook(tcc_get_text_list_addr_offset);
+
+
+			auto tcc_play_cut_addr = il2cpp_class_get_method_from_name(training_cutscene_controller_class, "PlayTrainingCut", 1)->methodPointer;
+			printf("tcc_play_cut_addr: %p\n", tcc_play_cut_addr);
+
+			auto tcc_play_cut_addr_offset = reinterpret_cast<void*>(tcc_play_cut_addr);
+			printf("tcc_play_cut_addr_offset: %p\n", tcc_play_cut_addr_offset);
+
+			MH_CreateHook(tcc_play_cut_addr_offset, tcc_play_cut_hook, &tcc_play_cut_orig);
+			MH_EnableHook(tcc_play_cut_addr_offset);
 
 
 			import_translations();

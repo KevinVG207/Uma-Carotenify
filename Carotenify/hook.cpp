@@ -152,9 +152,12 @@ namespace
 		replaceAll(in_str, "<nvo>", "");
 		replaceAll(in_str, "<oob>", "");
 		replaceAll(in_str, "<ub>", "");
+		replaceAll(in_str, "<mon>", "");
 		replaceAll(in_str, "<slogan>", "");
 		replaceAll(in_str, "<br>", "");
 		replaceAll(in_str, "<force>", "");
+		replaceAll(in_str, "<ords>", "");  // Ordinal numeral start
+		replaceAll(in_str, "<orde>", "");  // Ordinal numeral end
 	}
 
 	Il2CppString* (*environment_get_stacktrace)();
@@ -401,6 +404,239 @@ namespace
 		return reinterpret_cast<decltype(populate_hook)*>(populate_orig)(_this, str, settings);
 	}
 
+	std::string handle_early_late(std::string str, size_t idx, int len, std::string repl)
+	{
+		bool has_replaced = false;
+		int full_len = len;
+		std::string new_substr;
+		std::string substr = str.substr(idx + len, 5);
+		if (substr == "Early")
+		{
+			new_substr = "Early " + repl;
+			has_replaced = true;
+			full_len += 6;
+		}
+
+		substr = str.substr(idx + len, 4);
+		if (substr == "Late")
+		{
+			new_substr = "Late " + repl;
+			has_replaced = true;
+			full_len += 5;
+		}
+
+		substr = str.substr(idx + len, 6);
+		if (substr == " Early")
+		{
+			new_substr = "Early " + repl;
+			has_replaced = true;
+			full_len += 6;
+		}
+
+		substr = str.substr(idx + len, 5);
+		if (substr == " Late")
+		{
+			new_substr = "Late " + repl;
+			has_replaced = true;
+			full_len += 5;
+		}
+
+		if (!has_replaced)
+		{
+			new_substr = repl;
+		}
+
+		if (idx > 0)
+		{
+			if (str[idx - 1] != ' ')
+			{
+				new_substr = " " + new_substr;
+				full_len += 1;
+			}
+		}
+
+		str.replace(idx, full_len, new_substr);
+
+		return str;
+	}
+
+	std::string handle_months(std::string str)
+	{
+		while (str.find("<mon>") != std::string::npos)
+		{
+			bool has_replaced = false;
+
+			if (str.find("<mon>12") != std::string::npos)
+			{
+				auto idx = str.find("<mon>12");
+				auto len = 7;
+				auto repl = "Dec.";
+				str = handle_early_late(str, idx, len, repl);
+				continue;
+			}
+			if (str.find("<mon>11") != std::string::npos)
+			{
+				auto idx = str.find("<mon>11");
+				auto len = 7;
+				auto repl = "Nov.";
+				str = handle_early_late(str, idx, len, repl);
+				continue;
+			}
+			if (str.find("<mon>10") != std::string::npos)
+			{
+				auto idx = str.find("<mon>10");
+				auto len = 7;
+				auto repl = "Oct.";
+				str = handle_early_late(str, idx, len, repl);
+				continue;
+			}
+			if (str.find("<mon>9") != std::string::npos)
+			{
+				auto idx = str.find("<mon>9");
+				auto len = 6;
+				auto repl = "Sep.";
+				str = handle_early_late(str, idx, len, repl);
+				continue;
+			}
+			if (str.find("<mon>8") != std::string::npos)
+			{
+				auto idx = str.find("<mon>8");
+				auto len = 6;
+				auto repl = "Aug.";
+				str = handle_early_late(str, idx, len, repl);
+				continue;
+			}
+			if (str.find("<mon>7") != std::string::npos)
+			{
+				auto idx = str.find("<mon>7");
+				auto len = 6;
+				auto repl = "Jul.";
+				str = handle_early_late(str, idx, len, repl);
+				continue;
+			}
+			if (str.find("<mon>6") != std::string::npos)
+			{
+				auto idx = str.find("<mon>6");
+				auto len = 6;
+				auto repl = "Jun.";
+				str = handle_early_late(str, idx, len, repl);
+				continue;
+			}
+			if (str.find("<mon>5") != std::string::npos)
+			{
+				auto idx = str.find("<mon>5");
+				auto len = 6;
+				auto repl = "May.";
+				str = handle_early_late(str, idx, len, repl);
+				continue;
+			}
+			if (str.find("<mon>4") != std::string::npos)
+			{
+				auto idx = str.find("<mon>4");
+				auto len = 6;
+				auto repl = "Apr.";
+				str = handle_early_late(str, idx, len, repl);
+				continue;
+			}
+			if (str.find("<mon>3") != std::string::npos)
+			{
+				auto idx = str.find("<mon>3");
+				auto len = 6;
+				auto repl = "Mar.";
+				str = handle_early_late(str, idx, len, repl);
+				continue;
+			}
+			if (str.find("<mon>2") != std::string::npos)
+			{
+				auto idx = str.find("<mon>2");
+				auto len = 6;
+				auto repl = "Feb.";
+				str = handle_early_late(str, idx, len, repl);
+				continue;
+			}
+			if (str.find("<mon>1") != std::string::npos)
+			{
+				auto idx = str.find("<mon>1");
+				auto len = 6;
+				auto repl = "Jan.";
+				str = handle_early_late(str, idx, len, repl);
+				continue;
+			}
+
+			// If we reach here, we have not replaced anything
+			replaceAll(str, "<mon>", "");
+		}
+
+		return str;
+	}
+
+	std::string handle_ordinal_numberals(std::string str)
+	{
+		while (str.find("<ords>") != std::string::npos)
+		{
+			auto start = str.find("<ords>");
+			auto end = str.find("<orde>");
+
+			if (end == std::string::npos)
+			{
+				// No end tag found
+				break;
+			}
+
+			std::string substr = str.substr(start + 6, end - start - 6);
+
+			if (substr == "1")
+			{
+				substr += "st";
+			}
+			else if (substr == "2")
+			{
+				substr += "nd";
+			}
+			else if (substr == "3")
+			{
+				substr += "rd";
+			}
+
+			else if (substr.length() > 1)
+			{
+				if (substr[substr.length() - 2] == '1')
+				{
+					substr += "th";
+				}
+				else
+				{
+					if (substr.back() == '1')
+					{
+						substr += "st";
+					}
+					else if (substr.back() == '2')
+					{
+						substr += "nd";
+					}
+					else if (substr.back() == '3')
+					{
+						substr += "rd";
+					}
+					else
+					{
+						substr += "th";
+					}
+				}
+			}
+
+			else
+			{
+				substr += "th";
+			}
+
+			str.replace(start, end - start + 6, substr);
+		}
+		replaceAll(str, "<orde>", "");
+
+		return str;
+	}
+
 	std::string handle_tags(std::string str_utf8, TextGenerationSettings_t* settings)
 	{
 		// Special case for training event result messages.
@@ -427,6 +663,9 @@ namespace
 			return str_utf8;
 		}
 
+		// Months
+		str_utf8 = handle_months(str_utf8);
+		str_utf8 = handle_ordinal_numberals(str_utf8);
 
 		if (str_utf8.find("<a7>") != std::string::npos)
 		{

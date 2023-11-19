@@ -663,8 +663,6 @@ namespace
 			return str_utf8;
 		}
 
-		// Months
-		str_utf8 = handle_months(str_utf8);
 		str_utf8 = handle_ordinal_numberals(str_utf8);
 
 		if (str_utf8.find("<a7>") != std::string::npos)
@@ -777,6 +775,8 @@ namespace
 			replaceAll(str_utf8, "<force>", "");
 		}
 
+		str_utf8 = handle_months(str_utf8);
+
 		return str_utf8;
 	}
 
@@ -868,7 +868,7 @@ namespace
 			// Do not replace some special cases
 			if (do_not_replace_strings.find(textid_string) != do_not_replace_strings.end())
 			{
-				return out_text;
+				goto KeepOriginal;
 			}
 
 
@@ -911,9 +911,15 @@ namespace
 			}
 		}
 
+		KeepOriginal:
+
 		// Print ID
-		if (id == 1030 || id == 1107){}
-		else if (debug_mode) {
+		std::set<int> no_print_ids = {
+			1030, 1031, 1107, 1108
+		};
+
+		if (debug_mode && no_print_ids.find(id) == no_print_ids.end())
+		{
 			printf("Fetch %d: %s\n", id, il2cppstring_to_utf8(out_text->start_char).c_str());
 		}
 
@@ -1109,12 +1115,44 @@ namespace
 		return reinterpret_cast<decltype(antext_settext_hook)*>(antext_settext_orig)(_this, text);
 	}
 
+	void* antext_gettext_orig = nullptr;
+	void* antext_gettext_hook(void* _this)
+	{
+		void* ret = reinterpret_cast<decltype(antext_gettext_hook)*>(antext_gettext_orig)(_this);
+		return ret;
+	
+	}
+
+	void* antext_getfixtext_orig = nullptr;
+	void* antext_getfixtext_hook(void* _this)
+	{
+		void* ret = reinterpret_cast<decltype(antext_getfixtext_hook)*>(antext_getfixtext_orig)(_this);
+		return ret;
+	
+	}
+
+	void* antext_getfixtext_wrt_orig = nullptr;
+	void* antext_getfixtext_wrt_hook(void* _this)
+	{
+		void* ret = reinterpret_cast<decltype(antext_getfixtext_wrt_hook)*>(antext_getfixtext_wrt_orig)(_this);
+		return ret;
+	
+	}
+
 	void* tcc_play_cut_orig = nullptr;
 	void* tcc_play_cut_hook(void* _this, void* play_info)
 	{
 		void* enumerator = reinterpret_cast<decltype(tcc_play_cut_hook)*>(tcc_play_cut_orig)(_this, play_info);
 		last_text_list_ptr = enumerator;
 		return enumerator;
+	}
+
+	void* get_scen_race_name_orig = nullptr;
+	void* get_scen_race_name_hook(void* _this)
+	{
+		void* ret = reinterpret_cast<decltype(get_scen_race_name_hook)*>(get_scen_race_name_orig)(_this);
+		printf("get_scen_race_name_hook: %s\n", il2cppstring_to_utf8(reinterpret_cast<Il2CppString*>(ret)->start_char).c_str());
+		return ret;
 	}
 
 
@@ -1218,8 +1256,6 @@ namespace
 			// print_class_methods_with_types(tmp_text_class);
 
 
-
-
 			auto unity_core_assembly = il2cpp_domain_assembly_open(domain, "UnityEngine.CoreModule.dll");
 			printf("Unity Core Assembly: %p\n", unity_core_assembly);
 			auto unity_core_image = il2cpp_assembly_get_image(unity_core_assembly);
@@ -1246,6 +1282,57 @@ namespace
 
 			// MH_CreateHook(set_name_addr_offset, set_name_hook, &set_name_orig);
 			// MH_EnableHook(set_name_addr_offset);
+
+
+
+
+			auto plugins_assembly = il2cpp_domain_assembly_open(domain, "Plugins.dll");
+			printf("Plugins Assembly: %p\n", plugins_assembly);
+			auto plugins_image = il2cpp_assembly_get_image(plugins_assembly);
+			printf("Plugins Image: %p\n", plugins_image);
+
+			auto antext_class = il2cpp_class_from_name(plugins_image, "AnimateToUnity", "AnText");
+			printf("AnText: %p\n", antext_class);
+
+			auto antext_settext_addr = il2cpp_class_get_method_from_name(antext_class, "SetText", 1)->methodPointer;
+			printf("antext_settext_addr: %p\n", antext_settext_addr);
+
+			auto antext_settext_addr_offset = reinterpret_cast<void*>(antext_settext_addr);
+			printf("antext_settext_addr_offset: %p\n", antext_settext_addr_offset);
+
+			MH_CreateHook(antext_settext_addr_offset, antext_settext_hook, &antext_settext_orig);
+			MH_EnableHook(antext_settext_addr_offset);
+
+
+			auto antext_gettext_addr = il2cpp_class_get_method_from_name(antext_class, "get_Text", 0)->methodPointer;
+			printf("antext_gettext_addr: %p\n", antext_gettext_addr);
+
+			auto antext_gettext_addr_offset = reinterpret_cast<void*>(antext_gettext_addr);
+			printf("antext_gettext_addr_offset: %p\n", antext_gettext_addr_offset);
+
+			MH_CreateHook(antext_gettext_addr_offset, antext_gettext_hook, &antext_gettext_orig);
+			MH_EnableHook(antext_gettext_addr_offset);
+
+
+			auto antext_getfixtext_addr = il2cpp_class_get_method_from_name(antext_class, "get_FixText", 0)->methodPointer;
+			printf("antext_getfixtext_addr: %p\n", antext_getfixtext_addr);
+
+			auto antext_getfixtext_addr_offset = reinterpret_cast<void*>(antext_getfixtext_addr);
+			printf("antext_getfixtext_addr_offset: %p\n", antext_getfixtext_addr_offset);
+
+			MH_CreateHook(antext_getfixtext_addr_offset, antext_getfixtext_hook, &antext_getfixtext_orig);
+			MH_EnableHook(antext_getfixtext_addr_offset);
+
+
+			auto antext_getfixtext_wrt_addr = il2cpp_class_get_method_from_name(antext_class, "get_FixTextWithoutRichText", 0)->methodPointer;
+			printf("antext_getfixtext_wrt_addr: %p\n", antext_getfixtext_wrt_addr);
+
+			auto antext_getfixtext_wrt_addr_offset = reinterpret_cast<void*>(antext_getfixtext_wrt_addr);
+			printf("antext_getfixtext_wrt_addr_offset: %p\n", antext_getfixtext_wrt_addr_offset);
+
+			MH_CreateHook(antext_getfixtext_wrt_addr_offset, antext_getfixtext_wrt_hook, &antext_getfixtext_wrt_orig);
+			MH_EnableHook(antext_getfixtext_wrt_addr_offset);
+
 
 
 
@@ -1322,6 +1409,27 @@ namespace
 
 			MH_CreateHook(localize_jp_get_addr_offset, localize_jp_get_hook, &localize_jp_get_orig);
 			MH_EnableHook(localize_jp_get_addr_offset);
+
+
+
+			// const auto turncountera2u_class = il2cpp_class_from_name(uma_image, "Gallop", "SingleModeMainViewHeaderTurnCounterA2U");
+			// printf("turncountera2u_class: %p\n", turncountera2u_class);
+
+			// const char* name = "TurnCounter";
+			// const auto turncountera2u_turncounter_class = find_nested_class_by_name(turncountera2u_class, name);
+			
+
+			const auto single_header_model_class = il2cpp_class_from_name(uma_image, "Gallop", "SingleModeMainViewHeaderModel");
+			printf("single_header_model_class: %p\n", single_header_model_class);
+
+			auto get_scen_race_name_addr = il2cpp_class_get_method_from_name(single_header_model_class, "GetScenarioRaceName", 0)->methodPointer;
+			printf("get_scen_race_name_addr: %p\n", get_scen_race_name_addr);
+
+			auto get_scen_race_name_addr_offset = reinterpret_cast<void*>(get_scen_race_name_addr);
+			printf("get_scen_race_name_addr_offset: %p\n", get_scen_race_name_addr_offset);
+
+			MH_CreateHook(get_scen_race_name_addr_offset, get_scen_race_name_hook, &get_scen_race_name_orig);
+			MH_EnableHook(get_scen_race_name_addr_offset);
 
 
 			// TextCommon

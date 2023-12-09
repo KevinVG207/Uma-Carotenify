@@ -132,7 +132,7 @@ namespace
 	}
 
 
-	void remove_all_tags(std::string in_str)
+	void remove_all_tags(std::string& in_str)
 	{
 		// Remove all <> tags
 		replaceAll(in_str, "<res>", "");
@@ -371,6 +371,7 @@ namespace
 	void* move_next_orig = nullptr;
 	bool move_next_hook(void* _this)
 	{
+		printf("move_next_hook\n");
 		if (last_text_list_ptr == _this)
 		{
 			// We are in the training cutscene enumerator
@@ -783,6 +784,7 @@ namespace
 	void* populate_with_errors_orig = nullptr;
 	bool populate_with_errors_hook(void* _this, Il2CppString* str, TextGenerationSettings_t* settings, void* context)
 	{
+		// printf("populate_with_errors_hook\n");
 		// Resize font
 		// settings->fontSize = round(settings->fontSize * 0.9f);
 
@@ -847,7 +849,7 @@ namespace
 	void* textcommon_gettextid_string_orig = nullptr;
 	Il2CppString* textcommon_gettextid_string_hook (void* _this)
 	{
-		// printf("textcommon_gettextid_string_hook\n");
+		// printf("textcommon_gettextid_string_hook: %p\n", _this);
 		return reinterpret_cast<decltype(textcommon_gettextid_string_hook)*>(textcommon_gettextid_string_orig)(_this);
 	}
 
@@ -857,6 +859,16 @@ namespace
 		// printf("localize_jp_get_hook\n");
 
 		Il2CppString* out_text = reinterpret_cast<decltype(localize_jp_get_hook)*>(localize_jp_get_orig)(id);
+
+		// if (id == 4218)
+		// {
+		// 	stacktrace();
+		// }
+
+		// if (id == 946)
+		// {
+		// 	stacktrace();
+		// }
 
 		// printf("=== JP GET ===");
 		// printf("ID: %d\n", id);
@@ -872,12 +884,12 @@ namespace
 			}
 
 
-			std::string compare_str = "CustomRace0003";
-			if (textid_string == compare_str)
-			{
-				printf("!!!Found CustomRace0003!!!\n");
-				stacktrace();
-			}
+			// std::string compare_str = "CustomRace0003";
+			// if (textid_string == compare_str)
+			// {
+			// 	printf("!!!Found CustomRace0003!!!\n");
+			// 	stacktrace();
+			// }
 
 
 			
@@ -922,6 +934,8 @@ namespace
 		{
 			printf("Fetch %d: %s\n", id, il2cppstring_to_utf8(out_text->start_char).c_str());
 		}
+
+		// printf("Fetch %d: %s\n", id, il2cppstring_to_utf8(out_text->start_char).c_str());
 
 		return out_text;
 	}
@@ -1020,19 +1034,34 @@ namespace
 	void* textcommon_gettext_orig = nullptr;
 	Il2CppString* textcommon_gettext_hook (void* _this)
 	{
-		// printf("textcommon_gettext_hook\n");
-
 		Il2CppString* orig_text = reinterpret_cast<decltype(textcommon_gettext_hook)*>(textcommon_gettext_orig)(_this);
+		// printf("textcommon_gettext_hook: %s\n", il2cppstring_to_utf8(orig_text->start_char).c_str());
 
 		// return orig_text;
+		// stacktrace();
+
+		// printf("a\n");
 		
 		std::string orig_text_utf8 = il2cppstring_to_utf8(orig_text->start_char);
 		std::string orig_text_json = il2cppstring_to_jsonstring(orig_text->start_char);
 
+		// printf("_this: %p\n", _this);
+
+		// Check if _this is valid
+		auto bad = IsBadReadPtr(_this, 8);
+		if (bad)
+		{
+			printf("Bad read ptr\n");
+			return orig_text;
+		}
 
 		Il2CppString* textid_string = textcommon_gettextid_string_hook(_this);
+
+		// printf("b\n");
 		
 		int textid = textcommon_gettextid_hook(_this);
+
+		// printf("c\n");
 
 		if (textid_string == nullptr || stringid_pointers.find(textid_string) == stringid_pointers.end() || textid_string->length == 0)
 		{
@@ -1076,6 +1105,7 @@ namespace
 	void* uimanager_SetHeaderTitleText2_orig = nullptr;
 	void* uimanager_SetHeaderTitleText2_hook(void* _this, Il2CppString* text, void* guide_id)
 	{
+		// printf("uimanager_SetHeaderTitleText2_hook\n");
 		// printf("uimanager_SetHeaderTitleText2_hook: %s\n", il2cppstring_to_utf8(text->start_char).c_str());
 		return reinterpret_cast<decltype(uimanager_SetHeaderTitleText2_hook)*>(uimanager_SetHeaderTitleText2_orig)(_this, text, guide_id);
 	}
@@ -1084,6 +1114,7 @@ namespace
 	void* uimanager_SetHeaderTitleText1_orig = nullptr;
 	void* uimanager_SetHeaderTitleText1_hook(void* _this, int text_id, void* guide_id)
 	{
+		// printf("uimanager_SetHeaderTitleText1_hook\n");
 		// printf("uimanager_SetHeaderTitleText1_hook: %d\n", text_id);
 		// If text_id in text_id_to_string, then use that instead
 		if (text_id_to_string.find(text_id) != text_id_to_string.end())
@@ -1104,6 +1135,7 @@ namespace
 	void* tcc_get_text_list_orig = nullptr;
 	void* tcc_get_text_list_hook(void* _this)
 	{
+		// printf("tcc_get_text_list_hook\n");
 		void* ret = reinterpret_cast<decltype(tcc_get_text_list_hook)*>(tcc_get_text_list_orig)(_this);
 		return ret;
 	}
@@ -1118,6 +1150,7 @@ namespace
 	void* antext_gettext_orig = nullptr;
 	void* antext_gettext_hook(void* _this)
 	{
+		// printf("antext_gettext_hook\n");
 		void* ret = reinterpret_cast<decltype(antext_gettext_hook)*>(antext_gettext_orig)(_this);
 		return ret;
 	
@@ -1126,6 +1159,7 @@ namespace
 	void* antext_getfixtext_orig = nullptr;
 	void* antext_getfixtext_hook(void* _this)
 	{
+		// printf("antext_getfixtext_hook\n");
 		void* ret = reinterpret_cast<decltype(antext_getfixtext_hook)*>(antext_getfixtext_orig)(_this);
 		return ret;
 	
@@ -1134,6 +1168,7 @@ namespace
 	void* antext_getfixtext_wrt_orig = nullptr;
 	void* antext_getfixtext_wrt_hook(void* _this)
 	{
+		// printf("antext_getfixtext_wrt_hook\n");
 		void* ret = reinterpret_cast<decltype(antext_getfixtext_wrt_hook)*>(antext_getfixtext_wrt_orig)(_this);
 		return ret;
 	
@@ -1142,6 +1177,7 @@ namespace
 	void* tcc_play_cut_orig = nullptr;
 	void* tcc_play_cut_hook(void* _this, void* play_info)
 	{
+		// printf("tcc_play_cut_hook\n");
 		void* enumerator = reinterpret_cast<decltype(tcc_play_cut_hook)*>(tcc_play_cut_orig)(_this, play_info);
 		last_text_list_ptr = enumerator;
 		return enumerator;
@@ -1153,6 +1189,33 @@ namespace
 		void* ret = reinterpret_cast<decltype(get_scen_race_name_hook)*>(get_scen_race_name_orig)(_this);
 		printf("get_scen_race_name_hook: %s\n", il2cppstring_to_utf8(reinterpret_cast<Il2CppString*>(ret)->start_char).c_str());
 		return ret;
+	}
+
+	void* tpca2u_getcaptiontext_orig = nullptr;
+	Il2CppString* tpca2u_getcaptiontext_hook(void* _this, void* change_param_info)
+	{
+		// printf("tpca2u_getcaptiontext_hook\n");
+		Il2CppString* ret = reinterpret_cast<decltype(tpca2u_getcaptiontext_hook)*>(tpca2u_getcaptiontext_orig)(_this, change_param_info);
+		
+		std::string ret_utf8 = il2cppstring_to_utf8(ret->start_char);
+
+		remove_all_tags(ret_utf8);
+
+		return il2cpp_string_new(ret_utf8.data());
+	}
+
+	void* tpca2u_getskillcaptiontext_orig = nullptr;
+	Il2CppString* tpca2u_getskillcaptiontext_hook(void* _this, int skill_id, int skill_level)
+	{
+		// printf("tpca2u_getskillcaptiontext_hook\n");
+		Il2CppString* ret = reinterpret_cast<decltype(tpca2u_getskillcaptiontext_hook)*>(tpca2u_getskillcaptiontext_orig)(_this, skill_id, skill_level);
+		
+		std::string ret_utf8 = il2cppstring_to_utf8(ret->start_char);
+
+		remove_all_tags(ret_utf8);
+
+		return il2cpp_string_new(ret_utf8.data());
+	
 	}
 
 
@@ -1489,6 +1552,62 @@ namespace
 
 			MH_CreateHook(textcommon_gettext_addr_offset, textcommon_gettext_hook, &textcommon_gettext_orig);
 			MH_EnableHook(textcommon_gettext_addr_offset);
+
+			auto trainingparamchangea2u_class = il2cpp_class_from_name(uma_image, "Gallop", "TrainingParamChangeA2U");
+			printf("trainingparamchangea2u_class: %p\n", trainingparamchangea2u_class);
+
+			auto tpca2u_getcaptiontext_addr = il2cpp_class_get_method_from_name(trainingparamchangea2u_class, "GetCaptionText", 1)->methodPointer;
+			printf("tpca2u_getcaptiontext_addr: %p\n", tpca2u_getcaptiontext_addr);
+
+			auto tpca2u_getcaptiontext_addr_offset = reinterpret_cast<void*>(tpca2u_getcaptiontext_addr);
+			printf("tpca2u_getcaptiontext_addr_offset: %p\n", tpca2u_getcaptiontext_addr_offset);
+
+			MH_CreateHook(tpca2u_getcaptiontext_addr_offset, tpca2u_getcaptiontext_hook, &tpca2u_getcaptiontext_orig);
+			MH_EnableHook(tpca2u_getcaptiontext_addr_offset);
+
+
+			auto tpca2u_getskillcaptiontext_addr = il2cpp_class_get_method_from_name(trainingparamchangea2u_class, "GetSkillCaptionText", 2)->methodPointer;
+			printf("tpca2u_getskillcaptiontext_addr: %p\n", tpca2u_getskillcaptiontext_addr);
+
+			auto tpca2u_getskillcaptiontext_addr_offset = reinterpret_cast<void*>(tpca2u_getskillcaptiontext_addr);
+			printf("tpca2u_getskillcaptiontext_addr_offset: %p\n", tpca2u_getskillcaptiontext_addr_offset);
+
+			MH_CreateHook(tpca2u_getskillcaptiontext_addr_offset, tpca2u_getskillcaptiontext_hook, &tpca2u_getskillcaptiontext_orig);
+			MH_EnableHook(tpca2u_getskillcaptiontext_addr_offset);
+
+
+			// auto icustomtextcomponent_class = il2cpp_class_from_name(uma_image, "Gallop", "ICustomTextComponent");
+			// printf("ICustomTextComponent: %p\n", icustomtextcomponent_class);
+
+			// // Check if tags need to be removed in these two functions
+			// auto icustomtextcomponent_settext_addr = il2cpp_class_get_method_from_name(icustomtextcomponent_class, "set_text", 1)->methodPointer;
+			// printf("icustomtextcomponent_settext_addr: %p\n", icustomtextcomponent_settext_addr);
+
+			// auto icustomtextcomponent_settext_addr_offset = reinterpret_cast<void*>(icustomtextcomponent_settext_addr);
+			// printf("icustomtextcomponent_settext_addr_offset: %p\n", icustomtextcomponent_settext_addr_offset);
+
+			// MH_CreateHook(icustomtextcomponent_settext_addr_offset, icustomtextcomponent_settext_hook, &icustomtextcomponent_settext_orig);
+			// MH_EnableHook(icustomtextcomponent_settext_addr_offset);
+
+			// auto icustomtextcomponent_settextfrom_addr = il2cpp_class_get_method_from_name(icustomtextcomponent_class, "SetTextFromController", 1)->methodPointer;
+			// printf("icustomtextcomponent_settextfrom_addr: %p\n", icustomtextcomponent_settextfrom_addr);
+
+			// auto icustomtextcomponent_settextfrom_addr_offset = reinterpret_cast<void*>(icustomtextcomponent_settextfrom_addr);
+			// printf("icustomtextcomponent_settextfrom_addr_offset: %p\n", icustomtextcomponent_settextfrom_addr_offset);
+
+			// MH_CreateHook(icustomtextcomponent_settextfrom_addr_offset, icustomtextcomponent_settextfrom_hook, &icustomtextcomponent_settextfrom_orig);
+			// MH_EnableHook(icustomtextcomponent_settextfrom_addr_offset);
+
+
+
+			// auto icustomtextcomponent_gettext_addr = il2cpp_class_get_method_from_name(icustomtextcomponent_class, "get_text", 0)->methodPointer;
+			// printf("icustomtextcomponent_gettext_addr: %p\n", icustomtextcomponent_gettext_addr);
+
+			// auto icustomtextcomponent_gettext_addr_offset = reinterpret_cast<void*>(icustomtextcomponent_gettext_addr);
+			// printf("icustomtextcomponent_gettext_addr_offset: %p\n", icustomtextcomponent_gettext_addr_offset);
+
+			// MH_CreateHook(icustomtextcomponent_gettext_addr_offset, icustomtextcomponent_gettext_hook, &icustomtextcomponent_gettext_orig);
+			// MH_EnableHook(icustomtextcomponent_gettext_addr_offset);
 
 
 

@@ -763,6 +763,12 @@ namespace
 			replaceAll(str_utf8, "\n", "");
 			settings->horizontalOverflow = 0;
 		}
+		if (str_utf8.find("<story>") != std::string::npos)
+		{
+			replaceAll(str_utf8, "<story>", "");
+			settings->fontSize *= 0.9f;
+			settings->lineSpacing *= 0.8f;
+		}
 		if (str_utf8.find("<br>") != std::string::npos)
 		{
 			replaceAll(str_utf8, "<br>", "\n");
@@ -790,7 +796,6 @@ namespace
 
 		std::string str_utf8 = il2cppstring_to_utf8(str->start_char);
 		std::string str_json = il2cppstring_to_jsonstring(str->start_char);
-
 		
 		printf("Draw: %s\n", str_utf8.c_str());
 

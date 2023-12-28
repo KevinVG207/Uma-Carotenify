@@ -158,6 +158,18 @@ namespace
 		replaceAll(in_str, "<force>", "");
 		replaceAll(in_str, "<ords>", "");  // Ordinal numeral start
 		replaceAll(in_str, "<orde>", "");  // Ordinal numeral end
+		replaceAll(in_str, "<sy>", "");
+		replaceAll(in_str, "<sd>", "");
+		replaceAll(in_str, "<sh>", "");
+		replaceAll(in_str, "<sm>", "");
+		replaceAll(in_str, "<ss>", "");
+		replaceAll(in_str, "<st>", "");
+		replaceAll(in_str, "<ey>", "");
+		replaceAll(in_str, "<ed>", "");
+		replaceAll(in_str, "<eh>", "");
+		replaceAll(in_str, "<em>", "");
+		replaceAll(in_str, "<es>", "");
+		replaceAll(in_str, "<et>", "");
 	}
 
 	Il2CppString* (*environment_get_stacktrace)();
@@ -638,6 +650,59 @@ namespace
 		return str;
 	}
 
+	std::string handle_timespan(std::string str, std::string start_tag, std::string end_tag, std::string singular, std::string plural){
+
+		while (str.find(start_tag) != std::string::npos)
+		{
+			auto start = str.find(start_tag);
+			auto end = str.find(end_tag);
+
+			if (end == std::string::npos)
+			{
+				// No end tag found
+				break;
+			}
+
+			std::string substr = str.substr(start + start_tag.length(), end - start - start_tag.length());
+
+			int num = -1;
+
+			try
+			{
+				num = std::stoi(substr);
+			}
+			catch (const std::invalid_argument const& ex)
+			{
+				
+			}
+
+			if (num == 1)
+			{
+				substr += " " + singular;
+			} else {
+				substr += " " + plural;
+			}
+
+			str.replace(start, end - start + end_tag.length(), substr);
+		}
+
+		return str;
+
+	}
+
+
+	std::string handle_timespans(std::string str){
+		str = handle_timespan(str, "<sy>", "<ey>", "year", "years");
+		str = handle_timespan(str, "<sd>", "<ed>", "day", "days");
+		str = handle_timespan(str, "<sh>", "<eh>", "hour", "hours");
+		str = handle_timespan(str, "<sm>", "<em>", "min", "mins");
+		str = handle_timespan(str, "<ss>", "<es>", "sec", "secs");
+		str = handle_timespan(str, "<st>", "<et>", "turn", "turns");
+
+		return str;
+	}
+
+
 	std::string handle_tags(std::string str_utf8, TextGenerationSettings_t* settings)
 	{
 		// Special case for training event result messages.
@@ -665,6 +730,7 @@ namespace
 		}
 
 		str_utf8 = handle_ordinal_numberals(str_utf8);
+		str_utf8 = handle_timespans(str_utf8);
 
 		if (str_utf8.find("<a7>") != std::string::npos)
 		{

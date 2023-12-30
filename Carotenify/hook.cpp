@@ -170,6 +170,8 @@ namespace
 		replaceAll(in_str, "<em>", "");
 		replaceAll(in_str, "<es>", "");
 		replaceAll(in_str, "<et>", "");
+		replaceAll(in_str, "<ssc>", "");  // Scale tag start
+		replaceAll(in_str, "<esc>", "");  // Scale tag end
 	}
 
 	Il2CppString* (*environment_get_stacktrace)();
@@ -690,6 +692,56 @@ namespace
 
 	}
 
+	std::tuple<std::string, float> handle_scale_tag(std::string str, float current_font_size)
+	{
+		printf("handle_scale_tag\n");
+		printf("font size: %f\n", current_font_size);
+		while (str.find("<ssc>") != std::string::npos)
+		{
+			auto start = str.find("<ssc>");
+			auto end = str.find("<esc>");
+
+			printf("start: %d\n", start);
+			printf("end: %d\n", end);
+
+			if (end == std::string::npos)
+			{
+				// No end tag found
+				printf("a\n");
+				break;
+			}
+
+			if (start != 0)
+			{
+				printf("b\n");
+				str.replace(start, end - start + 5, "");
+				break;
+			}
+
+			std::string substr = str.substr(start + 5, end - start - 5);
+
+			float scale = 1.0f;
+			try
+			{
+				scale = std::stoi(substr) / 100.0f;
+			}
+			catch (const std::invalid_argument const& ex)
+			{
+				
+			}
+
+			current_font_size *= scale;
+
+			str.replace(start, end - start + 5, "");
+			printf("c\n");
+		}
+
+		printf("font size: %f\n", current_font_size);
+		printf("handle_scale_tag done\n");
+
+		return {str, current_font_size};
+	}
+
 
 	std::string handle_timespans(std::string str){
 		str = handle_timespan(str, "<sy>", "<ey>", "year", "years");
@@ -728,6 +780,8 @@ namespace
 			remove_all_tags(str_utf8);
 			return str_utf8;
 		}
+
+		std::tie(str_utf8, settings->fontSize) = handle_scale_tag(str_utf8, settings->fontSize);
 
 		str_utf8 = handle_ordinal_numberals(str_utf8);
 		str_utf8 = handle_timespans(str_utf8);

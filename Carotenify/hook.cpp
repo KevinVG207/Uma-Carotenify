@@ -132,6 +132,56 @@ namespace
 	}
 
 
+	void removePropertyTag(std::string& in_str, std::string tag)
+	{
+		// Property Tags look like <tag=xxx>
+		// We want to remove the whole tag, including the =xxx part
+		// There is no end tag.
+		std::string start_tag = "<" + tag + "=";
+		while (in_str.find(start_tag) != std::string::npos)
+		{
+			auto start = in_str.find(start_tag);
+			auto end = in_str.find(">", start);
+
+			if (end == std::string::npos)
+			{
+				// No end tag found
+				break;
+			}
+
+			in_str.replace(start, end - start + 1, "");
+		}
+
+	}
+	
+
+	std::string getPropertyTag(std::string& in_str, std::string tag)
+	{
+		// Property Tags look like <tag=xxx>
+		// Determine if a tag is found, and return the xxx part.
+
+		std::string ret = "";
+
+		std::string start_tag = "<" + tag + "=";
+		while (in_str.find(start_tag) != std::string::npos)
+		{
+			auto start = in_str.find(start_tag);
+			auto end = in_str.find(">", start);
+
+			if (end == std::string::npos)
+			{
+				// No end tag found
+				break;
+			}
+
+			ret = in_str.substr(start + start_tag.length(), end - start - start_tag.length());
+			break;
+		}
+
+		return ret;
+	}
+
+
 	void remove_all_tags(std::string& in_str)
 	{
 		// Remove all <> tags
@@ -170,8 +220,9 @@ namespace
 		replaceAll(in_str, "<em>", "");
 		replaceAll(in_str, "<es>", "");
 		replaceAll(in_str, "<et>", "");
-		replaceAll(in_str, "<ssc>", "");  // Scale tag start
-		replaceAll(in_str, "<esc>", "");  // Scale tag end
+		// replaceAll(in_str, "<ssc>", "");  // Scale tag start
+		// replaceAll(in_str, "<esc>", "");  // Scale tag end
+		removePropertyTag(in_str, "sc");
 	}
 
 	Il2CppString* (*environment_get_stacktrace)();
@@ -694,26 +745,26 @@ namespace
 
 	std::tuple<std::string, float> handle_scale_tag(std::string str, float current_font_size)
 	{
-		printf("handle_scale_tag\n");
-		printf("font size: %f\n", current_font_size);
+		// printf("handle_scale_tag\n");
+		// printf("font size: %f\n", current_font_size);
 		while (str.find("<ssc>") != std::string::npos)
 		{
 			auto start = str.find("<ssc>");
 			auto end = str.find("<esc>");
 
-			printf("start: %d\n", start);
-			printf("end: %d\n", end);
+			// printf("start: %d\n", start);
+			// printf("end: %d\n", end);
 
 			if (end == std::string::npos)
 			{
 				// No end tag found
-				printf("a\n");
+				// printf("a\n");
 				break;
 			}
 
 			if (start != 0)
 			{
-				printf("b\n");
+				// printf("b\n");
 				str.replace(start, end - start + 5, "");
 				break;
 			}
@@ -733,11 +784,32 @@ namespace
 			current_font_size *= scale;
 
 			str.replace(start, end - start + 5, "");
-			printf("c\n");
+			// printf("c\n");
 		}
 
-		printf("font size: %f\n", current_font_size);
-		printf("handle_scale_tag done\n");
+		// printf("font size: %f\n", current_font_size);
+		// printf("handle_scale_tag done\n");
+
+		return {str, current_font_size};
+	}
+
+	std::tuple<std::string, float> handle_scale_tag_v2(std::string str, float current_font_size)
+	{
+		auto value = getPropertyTag(str, "sc");
+
+		float scale = 1.0f;
+		try
+		{
+			scale = std::stoi(value) / 100.0f;
+		}
+		catch (const std::invalid_argument const& ex)
+		{
+			
+		}
+
+		current_font_size *= scale;
+
+		removePropertyTag(str, "sc");
 
 		return {str, current_font_size};
 	}
@@ -781,7 +853,7 @@ namespace
 			return str_utf8;
 		}
 
-		std::tie(str_utf8, settings->fontSize) = handle_scale_tag(str_utf8, settings->fontSize);
+		std::tie(str_utf8, settings->fontSize) = handle_scale_tag_v2(str_utf8, settings->fontSize);
 
 		str_utf8 = handle_ordinal_numberals(str_utf8);
 		str_utf8 = handle_timespans(str_utf8);

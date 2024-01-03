@@ -204,6 +204,7 @@ namespace
 		replaceAll(in_str, "<ub>", "");
 		replaceAll(in_str, "<mon>", "");
 		replaceAll(in_str, "<slogan>", "");
+		replaceAll(in_str, "<rbr>", "");
 		replaceAll(in_str, "<br>", "");
 		replaceAll(in_str, "<force>", "");
 		replaceAll(in_str, "<ords>", "");  // Ordinal numeral start
@@ -951,7 +952,15 @@ namespace
 		}
 		if (str_utf8.find("<slogan>") != std::string::npos)
 		{
+			//TODO: Phase out <slogan> tag and use <rbr> instead
 			replaceAll(str_utf8, "<slogan>", "");
+			replaceAll(str_utf8, "\n", "");
+			settings->horizontalOverflow = 0;
+		}
+		if (str_utf8.find("<rbr>") != std::string::npos)
+		{
+			// Remove breaks
+			replaceAll(str_utf8, "<rbr>", "");
 			replaceAll(str_utf8, "\n", "");
 			settings->horizontalOverflow = 0;
 		}

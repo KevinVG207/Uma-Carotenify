@@ -862,7 +862,6 @@ namespace
 
 	std::string handle_tags(std::string str_utf8, TextGenerationSettings_t* settings)
 	{
-		printf("c\n");
 		if (str_utf8.find("<log>") != std::string::npos)
 		{
 			replaceAll(str_utf8, "<log>", "");
@@ -870,18 +869,13 @@ namespace
 			replaceAll(str_utf8, "\n", "");
 
 			// Remove only first <res> tag.
-			printf("d\n");
 			size_t start = str_utf8.find("<res>");
-			printf("e\n");
 			if (start != std::string::npos)
 			{
-				printf("f\n");
 				str_utf8.erase(start, 5);
 			}
-			printf("g\n");
 
 			replaceAll(str_utf8, "<res>", "\n");
-			printf("h\n");
 
 			remove_all_tags(str_utf8);
 			return str_utf8;
@@ -1056,7 +1050,7 @@ namespace
 		std::string str_utf8 = il2cppstring_to_utf8(str->start_char);
 		std::string str_json = il2cppstring_to_jsonstring(str->start_char);
 		
-		printf("Draw: %s\n", str_utf8.c_str());
+		// printf("Draw before: %s\n", str_utf8.c_str());
 		// stacktrace();
 
 
@@ -1087,8 +1081,8 @@ namespace
 
 		str_utf8 = handle_tags(str_utf8, settings);
 
-		printf("Draw after tags: %s\n", str_utf8.c_str());
-		printf("horizonalOverflow: %d\n", settings->horizontalOverflow);
+		printf("Draw: %s\n", str_utf8.c_str());
+		// printf("horizonalOverflow: %d\n", settings->horizontalOverflow);
 
 		Il2CppString* new_str = il2cpp_string_new(str_utf8.data());
 		settings->richText = true;
@@ -1182,12 +1176,12 @@ namespace
 
 				if (in_stacktrace(training_result_array))
 				{
-					printf("Found\n");
+					// printf("Found\n");
 					out_text = il2cpp_string_new(("<res>" + il2cppstring_to_utf8(out_text->start_char)).data());
 				}
 				else
 				{
-					printf("Not found\n");
+					// printf("Not found\n");
 				}
 			}
 
@@ -1212,8 +1206,8 @@ namespace
 			printf("Fetch %d: %s\n", id, il2cppstring_to_utf8(out_text->start_char).c_str());
 		}
 
-		printf("Fetch %d: %s\n", id, il2cppstring_to_utf8(out_text->start_char).c_str());
-		stacktrace();
+		// printf("Fetch %d: %s\n", id, il2cppstring_to_utf8(out_text->start_char).c_str());
+		// stacktrace();
 
 		return out_text;
 	}
@@ -1289,8 +1283,8 @@ namespace
 	void* textcommon_settext_orig = nullptr;
 	void* textcommon_settext_hook (void* _this, Il2CppString* str)
 	{
-		printf("textcommon_settext_hook\n");
-		stacktrace();
+		// printf("textcommon_settext_hook\n");
+		// stacktrace();
 
 		// std::string str_utf8 = il2cppstring_to_jsonstring(str->start_char);
 		// printf("TextCommon.set_text: %s\n", str_utf8.c_str());
@@ -1302,10 +1296,10 @@ namespace
 			// auto new_str = textcommon_gettext_hook(_this);
 			// new_str = il2cpp_string_new(("<log>" + il2cppstring_to_utf8(new_str->start_char)).data());
 			// return reinterpret_cast<decltype(textcommon_settext_hook)*>(textcommon_settext_orig)(_this, new_str);
-			printf("a\n");
+			// printf("a\n");
 			str = il2cpp_string_new(("<log>" + il2cppstring_to_utf8(str->start_char)).data());
 		}
-		printf("b\n");
+		// printf("b\n");
 
 
 		if (first_textcommon)
@@ -1477,7 +1471,7 @@ namespace
 	void* get_scen_race_name_hook(void* _this)
 	{
 		void* ret = reinterpret_cast<decltype(get_scen_race_name_hook)*>(get_scen_race_name_orig)(_this);
-		printf("get_scen_race_name_hook: %s\n", il2cppstring_to_utf8(reinterpret_cast<Il2CppString*>(ret)->start_char).c_str());
+		// printf("get_scen_race_name_hook: %s\n", il2cppstring_to_utf8(reinterpret_cast<Il2CppString*>(ret)->start_char).c_str());
 		return ret;
 	}
 

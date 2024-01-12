@@ -47,6 +47,12 @@ namespace
 		"SingleMode418033"
 	};
 
+	const std::vector<std::string> training_result_array = {
+		"Gallop.SingleModeMainTrainingCuttController",
+		"Gallop.TrainingParamChangeUI",
+		"Gallop.StoryEventConclusion"
+	};
+
 	uintptr_t find_class_method_with_name_and_types(void* class_ptr, const char* method_name, const Il2CppTypeEnum method_types[])
 	{
 		uintptr_t return_ptr = 0;
@@ -186,6 +192,7 @@ namespace
 	{
 		// Remove all <> tags
 		replaceAll(in_str, "<res>", "");
+		replaceAll(in_str, "<log>", "");
 		replaceAll(in_str, "<a7>", "");
 		replaceAll(in_str, "<a8>", "");
 		replaceAll(in_str, "<a9>", "");
@@ -226,11 +233,56 @@ namespace
 		removePropertyTag(in_str, "sc");
 	}
 
+	std::string il2cppstring_to_utf8(std::wstring str)
+	{
+		std::string result;
+		result.resize(str.length() * 4);
+
+		int len = WideCharToMultiByte(CP_UTF8, 0, str.data(), str.length(), result.data(), result.size(), nullptr, nullptr);
+
+		result.resize(len);
+
+		return result;
+	}
+
+	std::string il2cppstring_to_jsonstring(std::wstring str)
+	{
+		auto unicode = il2cppstring_to_utf8(str);
+		replaceAll(unicode, "\n", "\\n");
+		replaceAll(unicode, "\r", "\\r");
+		replaceAll(unicode, "\"", "\\\"");
+
+		return unicode;
+	}
+
 	Il2CppString* (*environment_get_stacktrace)();
 
 	void stacktrace()
 	{
 		printf("%ls\n", environment_get_stacktrace()->start_char);
+	}
+
+	bool in_stacktrace(std::string str)
+	{
+		std::string stacktrace_str = il2cppstring_to_utf8(environment_get_stacktrace()->start_char);
+		if (stacktrace_str.find(str) != std::string::npos)
+		{
+			return true;
+		}
+		return false;
+	}
+
+	bool in_stacktrace(std::vector<std::string> str)
+	{
+		std::string stacktrace_str = il2cppstring_to_utf8(environment_get_stacktrace()->start_char);
+		for (auto& s : str)
+		{
+			if (stacktrace_str.find(s) != std::string::npos)
+			{
+				return true;
+			}
+		}
+		return false;
 	}
 
 	void* find_nested_class_by_name(void* klass, const char* name)
@@ -253,29 +305,6 @@ namespace
 		bool file_exists = infile.good();
 		infile.close();
 		return file_exists;
-	}
-
-
-	std::string il2cppstring_to_utf8(std::wstring str)
-	{
-		std::string result;
-		result.resize(str.length() * 4);
-
-		int len = WideCharToMultiByte(CP_UTF8, 0, str.data(), str.length(), result.data(), result.size(), nullptr, nullptr);
-
-		result.resize(len);
-
-		return result;
-	}
-
-	std::string il2cppstring_to_jsonstring(std::wstring str)
-	{
-		auto unicode = il2cppstring_to_utf8(str);
-		replaceAll(unicode, "\n", "\\n");
-		replaceAll(unicode, "\r", "\\r");
-		replaceAll(unicode, "\"", "\\\"");
-
-		return unicode;
 	}
 
 
@@ -358,9 +387,12 @@ namespace
 
 		FILE* _;
 		// open stdout stream
+
+		// TODO: Remove logging to file
 		freopen_s(&_, "CONOUT$", "w", stdout);
 		freopen_s(&_, "CONOUT$", "w", stderr);
 		freopen_s(&_, "CONIN$", "r", stdin);
+		// freopen_s(&_, "carotene_log.txt", "a", stdout);
 
 		SetConsoleTitle(L"Umapyoi");
 
@@ -830,26 +862,46 @@ namespace
 
 	std::string handle_tags(std::string str_utf8, TextGenerationSettings_t* settings)
 	{
+		if (str_utf8.find("<log>") != std::string::npos)
+		{
+			replaceAll(str_utf8, "<log>", "");
+			settings->horizontalOverflow = 0;
+			replaceAll(str_utf8, "\n", "");
+
+			// Remove only first <res> tag.
+			size_t start = str_utf8.find("<res>");
+			if (start != std::string::npos)
+			{
+				str_utf8.erase(start, 5);
+			}
+
+			replaceAll(str_utf8, "<res>", "\n");
+
+			remove_all_tags(str_utf8);
+			return str_utf8;
+		}
+
 		// Special case for training event result messages.
 		if (str_utf8.find("<res>") != std::string::npos)
 		{
-			// If <res> appears more than 1 time
-			if (str_utf8.find("<res>") != str_utf8.rfind("<res>"))
-			{
-				// Workaround for log screen. This may mess up in other places!
-				// TODO: Maybe find a more robust solution?
-				replaceAll(str_utf8, "\n", "");
+			// // If <res> appears more than 1 time
+			// if (str_utf8.find("<res>") != str_utf8.rfind("<res>"))
+			// {
+			// 	// Workaround for log screen. This may mess up in other places!
+			// 	// TODO: Maybe find a more robust solution?
+			// 	replaceAll(str_utf8, "\n", "");
 
-				// Remove only the first instance of <res>
-				size_t start = str_utf8.find("<res>");
-				str_utf8.erase(start, 5);
+			// 	// Remove only the first instance of <res>
+			// 	size_t start = str_utf8.find("<res>");
+			// 	str_utf8.erase(start, 5);
 
-				replaceAll(str_utf8, "<res>", "\n");
-			} else {
-				replaceAll(str_utf8, "<res>", "");
-				replaceAll(str_utf8, "\n", "");
-			}
-
+			// 	replaceAll(str_utf8, "<res>", "\n");
+			// } else {
+			// 	replaceAll(str_utf8, "<res>", "");
+			// 	replaceAll(str_utf8, "\n", "");
+			// }
+			settings->horizontalOverflow = 0;
+			replaceAll(str_utf8, "\n", "");
 			remove_all_tags(str_utf8);
 			return str_utf8;
 		}
@@ -998,7 +1050,8 @@ namespace
 		std::string str_utf8 = il2cppstring_to_utf8(str->start_char);
 		std::string str_json = il2cppstring_to_jsonstring(str->start_char);
 		
-		printf("Draw: %s\n", str_utf8.c_str());
+		// printf("Draw before: %s\n", str_utf8.c_str());
+		// stacktrace();
 
 
 		// if (str_utf8 == "育成中のデータを削除します")
@@ -1027,6 +1080,9 @@ namespace
 		}
 
 		str_utf8 = handle_tags(str_utf8, settings);
+
+		printf("Draw: %s\n", str_utf8.c_str());
+		// printf("horizonalOverflow: %d\n", settings->horizontalOverflow);
 
 		Il2CppString* new_str = il2cpp_string_new(str_utf8.data());
 		settings->richText = true;
@@ -1117,7 +1173,16 @@ namespace
 				} else {
 					out_text = il2cpp_string_new(translation.data());
 				}
-				
+
+				if (in_stacktrace(training_result_array))
+				{
+					// printf("Found\n");
+					out_text = il2cpp_string_new(("<res>" + il2cppstring_to_utf8(out_text->start_char)).data());
+				}
+				else
+				{
+					// printf("Not found\n");
+				}
 			}
 
 		} else {
@@ -1142,6 +1207,7 @@ namespace
 		}
 
 		// printf("Fetch %d: %s\n", id, il2cppstring_to_utf8(out_text->start_char).c_str());
+		// stacktrace();
 
 		return out_text;
 	}
@@ -1218,16 +1284,28 @@ namespace
 	void* textcommon_settext_hook (void* _this, Il2CppString* str)
 	{
 		// printf("textcommon_settext_hook\n");
+		// stacktrace();
 
 		// std::string str_utf8 = il2cppstring_to_jsonstring(str->start_char);
 		// printf("TextCommon.set_text: %s\n", str_utf8.c_str());
 
-		int textid = textcommon_gettextid_hook(_this);
 		// printf("TextCommon.set_text: %d\n", textid);
+		if (str != nullptr && in_stacktrace("Gallop.SingleModeLogItem"))
+		{
+			// auto res = reinterpret_cast<decltype(textcommon_settext_hook)*>(textcommon_settext_orig)(_this, str);
+			// auto new_str = textcommon_gettext_hook(_this);
+			// new_str = il2cpp_string_new(("<log>" + il2cppstring_to_utf8(new_str->start_char)).data());
+			// return reinterpret_cast<decltype(textcommon_settext_hook)*>(textcommon_settext_orig)(_this, new_str);
+			// printf("a\n");
+			str = il2cpp_string_new(("<log>" + il2cppstring_to_utf8(str->start_char)).data());
+		}
+		// printf("b\n");
+
 
 		if (first_textcommon)
 		{
 			// Index text
+			int textid = textcommon_gettextid_hook(_this);
 			first_textcommon = false;
 			index_text(_this);
 			textcommon_settextid_hook(_this, textid);
@@ -1393,7 +1471,7 @@ namespace
 	void* get_scen_race_name_hook(void* _this)
 	{
 		void* ret = reinterpret_cast<decltype(get_scen_race_name_hook)*>(get_scen_race_name_orig)(_this);
-		printf("get_scen_race_name_hook: %s\n", il2cppstring_to_utf8(reinterpret_cast<Il2CppString*>(ret)->start_char).c_str());
+		// printf("get_scen_race_name_hook: %s\n", il2cppstring_to_utf8(reinterpret_cast<Il2CppString*>(ret)->start_char).c_str());
 		return ret;
 	}
 

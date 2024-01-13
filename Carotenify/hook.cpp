@@ -48,10 +48,12 @@ namespace
 	};
 
 	const std::vector<std::string> training_result_array = {
-		"Gallop.SingleModeMainTrainingCuttController",
-		"Gallop.TrainingParamChangeUI",
-		"Gallop.StoryEventConclusion"
+		"at Gallop.SingleModeMainTrainingCuttController.GetTrainingEffectMessageWindowTextList",
+		"at Gallop.TrainingParamChangeUI.GetMessageText",
+		"at Gallop.StoryEventConclusion"
 	};
+
+	// TrainingParamChangeUI.FitMessageSize
 
 	uintptr_t find_class_method_with_name_and_types(void* class_ptr, const char* method_name, const Il2CppTypeEnum method_types[])
 	{

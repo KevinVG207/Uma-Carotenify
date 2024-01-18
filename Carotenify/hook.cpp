@@ -567,6 +567,7 @@ namespace
 		{
 			bool has_replaced = false;
 
+			// TODO: Rework this, this is awful!
 			if (str.find("<mon>12") != std::string::npos)
 			{
 				auto idx = str.find("<mon>12");
@@ -1504,6 +1505,57 @@ namespace
 	
 	}
 
+	void* manifest_exec_orig = nullptr;
+	void* manifest_exec_hook(void* _this, Il2CppString* sql)
+	{
+		printf("manifest_exec_hook: %s\n", il2cppstring_to_utf8(sql->start_char).c_str());
+		return reinterpret_cast<decltype(manifest_exec_hook)*>(manifest_exec_orig)(_this, sql);
+	}
+
+	void* db_adapter_query_orig = nullptr;
+	void* db_adapter_query_hook(void* _this, Il2CppString* sql)
+	{
+		printf("db_adapter_query_hook: %s\n", il2cppstring_to_utf8(sql->start_char).c_str());
+		return reinterpret_cast<decltype(db_adapter_query_hook)*>(db_adapter_query_orig)(_this, sql);
+	}
+
+	void* db_adapter_preparedquery_orig = nullptr;
+	void* db_adapter_preparedquery_hook(void* _this, Il2CppString* sql)
+	{
+		printf("db_adapter_preparedquery_hook: %s\n", il2cppstring_to_utf8(sql->start_char).c_str());
+		return reinterpret_cast<decltype(db_adapter_preparedquery_hook)*>(db_adapter_preparedquery_orig)(_this, sql);
+	}
+
+
+	void* connection_exec_orig = nullptr;
+	void* connection_exec_hook(void* _this, Il2CppString* sql)
+	{
+		printf("connection_exec_hook: %s\n", il2cppstring_to_utf8(sql->start_char).c_str());
+		return reinterpret_cast<decltype(connection_exec_hook)*>(connection_exec_orig)(_this, sql);
+	}
+
+	void* connection_query_orig = nullptr;
+	void* connection_query_hook(void* _this, Il2CppString* sql)
+	{
+		printf("connection_query_hook: %s\n", il2cppstring_to_utf8(sql->start_char).c_str());
+		return reinterpret_cast<decltype(connection_query_hook)*>(connection_query_orig)(_this, sql);
+	}
+
+	void* connection_preparedquery_orig = nullptr;
+	void* connection_preparedquery_hook(void* _this, Il2CppString* sql)
+	{
+		printf("connection_preparedquery_hook: %s\n", il2cppstring_to_utf8(sql->start_char).c_str());
+		return reinterpret_cast<decltype(connection_preparedquery_hook)*>(connection_preparedquery_orig)(_this, sql);
+	}
+
+	void* query_ctor_orig = nullptr;
+	void* query_ctor_hook(void* _this, void* conn, Il2CppString* sql)
+	{
+		printf("query_ctor_hook: %s\n", il2cppstring_to_utf8(sql->start_char).c_str());
+		return reinterpret_cast<decltype(query_ctor_hook)*>(query_ctor_orig)(_this, conn, sql);
+	}
+
+
 
 	void bootstrap_carrot_juicer()
 	{
@@ -1705,6 +1757,113 @@ namespace
 
 			MH_CreateHook(populate_addr_offset, populate_hook, &populate_orig);
 			MH_EnableHook(populate_addr_offset);
+
+
+
+			auto libnative_runtime_assembly = il2cpp_domain_assembly_open(domain, "LibNative.Runtime.dll");
+			printf("libnative_runtime_assembly: %p\n", libnative_runtime_assembly);
+
+			auto libnative_runtime_image = il2cpp_assembly_get_image(libnative_runtime_assembly);
+			printf("libnative_runtime_image: %p\n", libnative_runtime_image);
+
+			auto connection_class = il2cpp_class_from_name(libnative_runtime_image, "LibNative.Sqlite3", "Connection");
+			printf("Connection: %p\n", connection_class);
+
+			auto connection_exec_addr = il2cpp_class_get_method_from_name(connection_class, "Exec", 1)->methodPointer;
+			printf("connection_exec_addr: %p\n", connection_exec_addr);
+
+			auto connection_exec_addr_offset = reinterpret_cast<void*>(connection_exec_addr);
+			printf("connection_exec_addr_offset: %p\n", connection_exec_addr_offset);
+
+			MH_CreateHook(connection_exec_addr_offset, connection_exec_hook, &connection_exec_orig);
+			MH_EnableHook(connection_exec_addr_offset);
+
+
+			auto connection_query_addr = il2cpp_class_get_method_from_name(connection_class, "Query", 1)->methodPointer;
+			printf("connection_query_addr: %p\n", connection_query_addr);
+
+			auto connection_query_addr_offset = reinterpret_cast<void*>(connection_query_addr);
+			printf("connection_query_addr_offset: %p\n", connection_query_addr_offset);
+
+			MH_CreateHook(connection_query_addr_offset, connection_query_hook, &connection_query_orig);
+			MH_EnableHook(connection_query_addr_offset);
+
+
+			auto connection_preparedquery_addr = il2cpp_class_get_method_from_name(connection_class, "PreparedQuery", 1)->methodPointer;
+			printf("connection_preparedquery_addr: %p\n", connection_preparedquery_addr);
+
+			auto connection_preparedquery_addr_offset = reinterpret_cast<void*>(connection_preparedquery_addr);
+			printf("connection_preparedquery_addr_offset: %p\n", connection_preparedquery_addr_offset);
+
+			MH_CreateHook(connection_preparedquery_addr_offset, connection_preparedquery_hook, &connection_preparedquery_orig);
+			MH_EnableHook(connection_preparedquery_addr_offset);
+
+			// auto query_class = il2cpp_class_from_name(libnative_runtime_image, "LibNative.Sqlite3", "PreparedQuery");
+			// printf("PreparedQuery: %p\n", query_class);
+
+			// auto query_ctor_addr = il2cpp_class_get_method_from_name(query_class, ".ctor", 2)->methodPointer;
+			// printf("query_ctor_addr: %p\n", query_ctor_addr);
+
+			// auto query_ctor_addr_offset = reinterpret_cast<void*>(query_ctor_addr);
+			// printf("query_ctor_addr_offset: %p\n", query_ctor_addr_offset);
+
+			// MH_CreateHook(query_ctor_addr_offset, query_ctor_hook, &query_ctor_orig);
+			// MH_EnableHook(query_ctor_addr_offset);
+
+
+			auto cyan_assembly = il2cpp_domain_assembly_open(domain, "_Cyan.dll");
+			printf("cyan_assembly: %p\n", cyan_assembly);
+
+			auto cyan_image = il2cpp_assembly_get_image(cyan_assembly);
+			printf("cyan_image: %p\n", cyan_image);
+
+			auto manifestdb_class = il2cpp_class_from_name(cyan_image, "Cyan.Manifest", "ManifestDB");
+			printf("ManifestDB: %p\n", manifestdb_class);
+
+			auto manifest_exec_addr = il2cpp_class_get_method_from_name(manifestdb_class, "Exec", 1)->methodPointer;
+			printf("manifest_exec_addr: %p\n", manifest_exec_addr);
+
+			auto manifest_exec_addr_offset = reinterpret_cast<void*>(manifest_exec_addr);
+			printf("manifest_exec_addr_offset: %p\n", manifest_exec_addr_offset);
+
+			MH_CreateHook(manifest_exec_addr_offset, manifest_exec_hook, &manifest_exec_orig);
+			MH_EnableHook(manifest_exec_addr_offset);
+
+
+			auto manifestdbadapter_class = il2cpp_class_from_name(cyan_image, "Cyan.Manifest", "ManifestDBAdapter");
+			printf("ManifestDBAdapter: %p\n", manifestdbadapter_class);
+
+			auto db_adapter_query_addr = il2cpp_class_get_method_from_name(manifestdbadapter_class, "Query", 1)->methodPointer;
+			printf("db_adapter_query_addr: %p\n", db_adapter_query_addr);
+
+			auto db_adapter_query_addr_offset = reinterpret_cast<void*>(db_adapter_query_addr);
+			printf("db_adapter_query_addr_offset: %p\n", db_adapter_query_addr_offset);
+
+			MH_CreateHook(db_adapter_query_addr_offset, db_adapter_query_hook, &db_adapter_query_orig);
+			MH_EnableHook(db_adapter_query_addr_offset);
+
+			
+			auto db_adapter_preparedquery_addr = il2cpp_class_get_method_from_name(manifestdbadapter_class, "PreparedQuery", 1)->methodPointer;
+			printf("db_adapter_preparedquery_addr: %p\n", db_adapter_preparedquery_addr);
+
+			auto db_adapter_preparedquery_addr_offset = reinterpret_cast<void*>(db_adapter_preparedquery_addr);
+			printf("db_adapter_preparedquery_addr_offset: %p\n", db_adapter_preparedquery_addr_offset);
+
+			MH_CreateHook(db_adapter_preparedquery_addr_offset, db_adapter_preparedquery_hook, &db_adapter_preparedquery_orig);
+			MH_EnableHook(db_adapter_preparedquery_addr_offset);
+
+
+			auto cyan_preparedquery_class = il2cpp_class_from_name(cyan_image, "Cyan.Manifest", "PreparedQuery");
+			printf("PreparedQuery: %p\n", cyan_preparedquery_class);
+
+			auto cyan_preparedquery_ctor_addr = il2cpp_class_get_method_from_name(cyan_preparedquery_class, ".ctor", 2)->methodPointer;
+			printf("cyan_preparedquery_ctor_addr: %p\n", cyan_preparedquery_ctor_addr);
+
+			auto cyan_preparedquery_ctor_addr_offset = reinterpret_cast<void*>(cyan_preparedquery_ctor_addr);
+			printf("cyan_preparedquery_ctor_addr_offset: %p\n", cyan_preparedquery_ctor_addr_offset);
+
+			MH_CreateHook(cyan_preparedquery_ctor_addr_offset, query_ctor_hook, &query_ctor_orig);
+			MH_EnableHook(cyan_preparedquery_ctor_addr_offset);
 
 
 			// Uma Assembly

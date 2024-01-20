@@ -213,6 +213,7 @@ namespace
 		replaceAll(in_str, "<ub>", "");
 		replaceAll(in_str, "<mon>", "");
 		replaceAll(in_str, "<slogan>", "");
+		replaceAll(in_str, "<story>", "");
 		replaceAll(in_str, "<rbr>", "");
 		replaceAll(in_str, "<br>", "");
 		replaceAll(in_str, "<force>", "");
@@ -567,6 +568,7 @@ namespace
 		{
 			bool has_replaced = false;
 
+			// TODO: Rework this, this is awful!
 			if (str.find("<mon>12") != std::string::npos)
 			{
 				auto idx = str.find("<mon>12");
@@ -1023,6 +1025,10 @@ namespace
 			replaceAll(str_utf8, "<story>", "");
 			settings->fontSize *= 0.9f;
 			settings->lineSpacing *= 0.8f;
+			Vector2_t tmp_pivot = settings->pivot;
+			tmp_pivot.y += 0.05f;
+			tmp_pivot.x -= 0.05f;
+			settings->pivot = tmp_pivot;
 		}
 		if (str_utf8.find("<br>") != std::string::npos)
 		{

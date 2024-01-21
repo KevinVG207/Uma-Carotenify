@@ -1027,7 +1027,7 @@ namespace
 			settings->lineSpacing *= 0.8f;
 			Vector2_t tmp_pivot = settings->pivot;
 			tmp_pivot.y += 0.05f;
-			tmp_pivot.x -= 0.05f;
+			tmp_pivot.x -= 0.10f;
 			settings->pivot = tmp_pivot;
 		}
 		if (str_utf8.find("<br>") != std::string::npos)
@@ -1087,9 +1087,11 @@ namespace
 			str_utf8 = text_id_string_to_translation[str_hash];
 		}
 
+		// printf("Draw b: %s\n", str_utf8.c_str());  // Before
+
 		str_utf8 = handle_tags(str_utf8, settings);
 
-		printf("Draw: %s\n", str_utf8.c_str());
+		printf("Draw: %s\n", str_utf8.c_str());  // After
 		// printf("horizonalOverflow: %d\n", settings->horizontalOverflow);
 
 		Il2CppString* new_str = il2cpp_string_new(str_utf8.data());

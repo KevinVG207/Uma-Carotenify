@@ -1329,6 +1329,11 @@ namespace
 	Il2CppString* textcommon_gettext_hook (void* _this)
 	{
 		Il2CppString* orig_text = reinterpret_cast<decltype(textcommon_gettext_hook)*>(textcommon_gettext_orig)(_this);
+
+		if (_this == nullptr)
+		{
+			return orig_text;
+		}
 		// printf("textcommon_gettext_hook: %s\n", il2cppstring_to_utf8(orig_text->start_char).c_str());
 
 		// return orig_text;

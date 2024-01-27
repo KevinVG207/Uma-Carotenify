@@ -1508,21 +1508,27 @@ namespace
 	void* manifest_exec_orig = nullptr;
 	void* manifest_exec_hook(void* _this, Il2CppString* sql)
 	{
-		printf("manifest_exec_hook: %s\n", il2cppstring_to_utf8(sql->start_char).c_str());
+		if (debug_mode){
+			printf("manifest_exec_hook: %s\n", il2cppstring_to_utf8(sql->start_char).c_str());
+		}
 		return reinterpret_cast<decltype(manifest_exec_hook)*>(manifest_exec_orig)(_this, sql);
 	}
 
 	void* db_adapter_query_orig = nullptr;
 	void* db_adapter_query_hook(void* _this, Il2CppString* sql)
 	{
-		printf("db_adapter_query_hook: %s\n", il2cppstring_to_utf8(sql->start_char).c_str());
+		if (debug_mode){
+			printf("db_adapter_query_hook: %s\n", il2cppstring_to_utf8(sql->start_char).c_str());
+		}
 		return reinterpret_cast<decltype(db_adapter_query_hook)*>(db_adapter_query_orig)(_this, sql);
 	}
 
 	void* db_adapter_preparedquery_orig = nullptr;
 	void* db_adapter_preparedquery_hook(void* _this, Il2CppString* sql)
 	{
-		printf("db_adapter_preparedquery_hook: %s\n", il2cppstring_to_utf8(sql->start_char).c_str());
+		if (debug_mode){
+			printf("db_adapter_preparedquery_hook: %s\n", il2cppstring_to_utf8(sql->start_char).c_str());
+		}
 		return reinterpret_cast<decltype(db_adapter_preparedquery_hook)*>(db_adapter_preparedquery_orig)(_this, sql);
 	}
 
@@ -1530,31 +1536,38 @@ namespace
 	void* connection_exec_orig = nullptr;
 	void* connection_exec_hook(void* _this, Il2CppString* sql)
 	{
-		printf("connection_exec_hook: %s\n", il2cppstring_to_utf8(sql->start_char).c_str());
+		if (debug_mode){
+			printf("connection_exec_hook: %s\n", il2cppstring_to_utf8(sql->start_char).c_str());
+		}
 		return reinterpret_cast<decltype(connection_exec_hook)*>(connection_exec_orig)(_this, sql);
 	}
 
 	void* connection_query_orig = nullptr;
 	void* connection_query_hook(void* _this, Il2CppString* sql)
 	{
-		printf("connection_query_hook: %s\n", il2cppstring_to_utf8(sql->start_char).c_str());
+		if (debug_mode){
+			printf("connection_query_hook: %s\n", il2cppstring_to_utf8(sql->start_char).c_str());
+		}
 		return reinterpret_cast<decltype(connection_query_hook)*>(connection_query_orig)(_this, sql);
 	}
 
 	void* connection_preparedquery_orig = nullptr;
 	void* connection_preparedquery_hook(void* _this, Il2CppString* sql)
 	{
-		printf("connection_preparedquery_hook: %s\n", il2cppstring_to_utf8(sql->start_char).c_str());
+		if (debug_mode){
+			printf("connection_preparedquery_hook: %s\n", il2cppstring_to_utf8(sql->start_char).c_str());
+		}
 		return reinterpret_cast<decltype(connection_preparedquery_hook)*>(connection_preparedquery_orig)(_this, sql);
 	}
 
 	void* query_ctor_orig = nullptr;
 	void* query_ctor_hook(void* _this, void* conn, Il2CppString* sql)
 	{
-		printf("query_ctor_hook: %s\n", il2cppstring_to_utf8(sql->start_char).c_str());
+		if (debug_mode){
+			printf("query_ctor_hook: %s\n", il2cppstring_to_utf8(sql->start_char).c_str());
+		}
 		return reinterpret_cast<decltype(query_ctor_hook)*>(query_ctor_orig)(_this, conn, sql);
 	}
-
 
 
 	void bootstrap_carrot_juicer()

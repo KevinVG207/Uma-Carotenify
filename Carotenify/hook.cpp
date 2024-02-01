@@ -1354,7 +1354,22 @@ namespace
 			return orig_text;
 		}
 
-		Il2CppString* textid_string = textcommon_gettextid_string_hook(_this);
+		Il2CppString* textid_string = nullptr;
+		try
+		{
+			textid_string = textcommon_gettextid_string_hook(_this);
+		}
+		catch (...)
+		{
+			printf("Exception caught\n");
+			return orig_text;
+		}
+
+		if (textid_string == nullptr)
+		{
+			return orig_text;
+		}
+		
 
 		// printf("b\n");
 		
@@ -1966,6 +1981,12 @@ void attach()
 	{
 		printf("carrotjuicer.dll found, loading...\n");
 		LoadLibraryW(L"carrotjuicer.dll");
+	}
+
+	if (file_exists("tlg.dll"))
+	{
+		printf("tlg.dll found, loading...\n");
+		LoadLibraryW(L"tlg.dll");
 	}
 }
 

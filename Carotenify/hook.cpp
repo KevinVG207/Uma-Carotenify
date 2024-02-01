@@ -450,6 +450,11 @@ namespace
 		const int ret = reinterpret_cast<decltype(LZ4_decompress_safe_ext_hook)*>(LZ4_decompress_safe_ext_orig)(
 			src, dst, compressedSize, dstCapacity);
 
+		std::filesystem::create_directory("CarrotJuicer");
+		const auto out_path = std::string("CarrotJuicer\\").append(current_time()).append("R.msgpack");
+		write_file(out_path, dst, ret);
+		std::cout << "wrote response to " << out_path << "\n";
+
 		return ret;
 	}
 
@@ -465,6 +470,11 @@ namespace
 
 		const int ret = reinterpret_cast<decltype(LZ4_compress_default_ext_hook)*>(LZ4_compress_default_ext_orig)(
 			src, dst, srcSize, dstCapacity);
+
+		std::filesystem::create_directory("CarrotJuicer");
+		const auto out_path = std::string("CarrotJuicer\\").append(current_time()).append("Q.msgpack");
+		write_file(out_path, src, srcSize);
+		std::cout << "wrote request to " << out_path << "\n";
 
 		return ret;
 	}
@@ -1572,6 +1582,15 @@ namespace
 		// GameAssembly.dll code must be loaded and decrypted while loading criware library
 		if (path == L"cri_ware_unity.dll"s)
 		{
+			// If folder CarrotJuicer exists, delete it recursively
+			std::string folder_name = "CarrotJuicer";
+			if (std::filesystem::exists(folder_name))
+			{
+				std::filesystem::remove_all(folder_name);
+			}
+			std::filesystem::create_directory(folder_name);
+
+
 			const auto game_assembly_module = GetModuleHandle(L"GameAssembly.dll");
 
 
@@ -1976,12 +1995,11 @@ void attach()
 	MH_CreateHook(LoadLibraryW, load_library_w_hook, &load_library_w_orig);
 	MH_EnableHook(LoadLibraryW);
 
-	// If 'carrotjuicer.dll' exists, loadlibraryw
-	if (file_exists("carrotjuicer.dll"))
-	{
-		printf("carrotjuicer.dll found, loading...\n");
-		LoadLibraryW(L"carrotjuicer.dll");
-	}
+	// if (file_exists("carrotjuicer.dll"))
+	// {
+	// 	printf("carrotjuicer.dll found, loading...\n");
+	// 	LoadLibraryW(L"carrotjuicer.dll");
+	// }
 
 	if (file_exists("tlg.dll"))
 	{

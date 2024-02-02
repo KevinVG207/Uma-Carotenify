@@ -40,7 +40,7 @@ namespace
 	bool tl_first_check = true;
 	std::filesystem::file_time_type tl_last_modified;
 	std::set<Il2CppString*> stringid_pointers;
-	bool debug_mode = false;
+	int debug_level = 0;
 	void* last_text_list_ptr = nullptr;
 
 	std::set<std::string> do_not_replace_strings = {
@@ -313,20 +313,20 @@ namespace
 
 	void import_translations()
 	{
-		std::string file_name = "assembly_dump.json";
-		if (file_exists(file_name))
-		{
-			debug_mode = true;
-		} else {
-			debug_mode = false;
-		}
-
-		file_name = "translations.txt";
+		std::string file_name = "translations.txt";
 
 		if (!file_exists(file_name))
 		{
-			printf("No translations.txt found\n");
+			// printf("No translations.txt found\n");
 			return;
+		}
+
+		debug_level = 1;
+
+		std::string assembly_file = "assembly_dump.json";
+		if (file_exists(assembly_file))
+		{
+			debug_level = 2;
 		}
 
 		if (tl_first_check)
@@ -1101,8 +1101,11 @@ namespace
 
 		str_utf8 = handle_tags(str_utf8, settings);
 
-		printf("Draw: %s\n", str_utf8.c_str());  // After
-		// printf("horizonalOverflow: %d\n", settings->horizontalOverflow);
+		if (debug_level > 0)
+		{
+			printf("Draw: %s\n", str_utf8.c_str());  // After
+			// printf("horizonalOverflow: %d\n", settings->horizontalOverflow);
+		}
 
 		Il2CppString* new_str = il2cpp_string_new(str_utf8.data());
 		settings->richText = true;
@@ -1178,7 +1181,7 @@ namespace
 			if (text_id_string_to_translation.find(textid_string) == text_id_string_to_translation.end())
 			{
 				// printf("Translation not found\n");
-				if (debug_mode)
+				if (debug_level > 1)
 				{
 					out_text = il2cpp_string_new((textid_string + "<debug>" + il2cppstring_to_utf8(out_text->start_char)).data());
 				}
@@ -1187,7 +1190,7 @@ namespace
 				std::string translation = text_id_string_to_translation[textid_string];
 				// printf("Translation: %s\n", translation.c_str());
 
-				if (debug_mode)
+				if (debug_level > 1)
 				{
 					out_text = il2cpp_string_new((textid_string + "<debug>" + translation).data());
 				} else {
@@ -1206,7 +1209,7 @@ namespace
 			}
 
 		} else {
-			if (debug_mode){
+			if (debug_level > 1){
 				// Convert int id to string
 				std::string textid_string = std::to_string(id);
 
@@ -1221,7 +1224,7 @@ namespace
 			1030, 1031, 1107, 1108
 		};
 
-		if (debug_mode && no_print_ids.find(id) == no_print_ids.end())
+		if (debug_level > 1 && no_print_ids.find(id) == no_print_ids.end())
 		{
 			printf("Fetch %d: %s\n", id, il2cppstring_to_utf8(out_text->start_char).c_str());
 		}
@@ -1238,7 +1241,7 @@ namespace
 		printf("Indexing text\n");
 		std::string file_name = "assembly_dump.json";
 		bool print_flag = false;
-		debug_mode = false;
+		debug_level = 0;
 		if (file_exists(file_name))
 		{
 			print_flag = true;
@@ -1290,7 +1293,7 @@ namespace
 		{
 			outfile << "\n}";
 			outfile.close();
-			debug_mode = true;
+			debug_level = 2;
 		}
 
 		printf("Indexing text done\n");
@@ -1418,7 +1421,7 @@ namespace
 		}
 		std::string translation = text_id_string_to_translation[textid_string_utf8];
 		
-		if (debug_mode)
+		if (debug_level > 1)
 		{
 			return il2cpp_string_new((textid_string_utf8 + "<debug>" + translation).data());
 		}

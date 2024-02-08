@@ -234,6 +234,10 @@ typedef void* (*il2cpp_runtime_invoke_t)(MethodInfo* method, void* obj, void** p
 typedef Il2CppType* (*il2cpp_class_enum_basetype_t)(void * klass);
 typedef uint32_t (*il2cpp_method_get_param_count_t)(const MethodInfo* method);
 typedef char* (*il2cpp_type_get_name_t)(const Il2CppType* type);
+typedef char* (*il2cpp_class_get_name_t)(void* klass);
+typedef char* (*il2cpp_class_get_namespace_t)(void* klass);
+typedef void* (*il2cpp_object_get_class_t)(void* obj);
+typedef uint32_t (*il2cpp_object_get_size_t)(void* obj);
 
 // function defines
 extern il2cpp_string_new_utf16_t il2cpp_string_new_utf16;
@@ -265,6 +269,10 @@ extern il2cpp_runtime_invoke_t il2cpp_runtime_invoke;
 extern il2cpp_class_enum_basetype_t il2cpp_class_enum_basetype;
 extern il2cpp_method_get_param_count_t il2cpp_method_get_param_count;
 extern il2cpp_type_get_name_t il2cpp_type_get_name;
+extern il2cpp_class_get_name_t il2cpp_class_get_name;
+extern il2cpp_class_get_namespace_t il2cpp_class_get_namespace;
+extern il2cpp_object_get_class_t il2cpp_object_get_class;
+extern il2cpp_object_get_size_t il2cpp_object_get_size;
 
 template <typename T>
 T read_field(const void* ptr, const FieldInfo* field)

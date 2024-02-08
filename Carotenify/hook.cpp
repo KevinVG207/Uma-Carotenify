@@ -32,6 +32,11 @@ namespace
 	il2cpp_type_get_name_t il2cpp_type_get_name;
 	il2cpp_method_get_param_t il2cpp_method_get_param;
 
+	il2cpp_object_get_class_t il2cpp_object_get_class;
+	il2cpp_object_get_size_t il2cpp_object_get_size;
+	il2cpp_class_get_name_t il2cpp_class_get_name;
+	il2cpp_class_get_namespace_t il2cpp_class_get_namespace;
+
 
 
 	std::map<int, std::string> text_id_to_string;
@@ -51,6 +56,11 @@ namespace
 		"at Gallop.SingleModeMainTrainingCuttController.GetTrainingEffectMessageWindowTextList",
 		"at Gallop.TrainingParamChangeUI.GetMessageText",
 		"at Gallop.StoryEventConclusion"
+	};
+
+	const std::vector<std::string> valid_textcommon_classes = {
+		"TextCommon",
+		"BitmapTextCommon"
 	};
 
 	// TrainingParamChangeUI.FitMessageSize
@@ -1357,7 +1367,17 @@ namespace
 		std::string orig_text_utf8 = il2cppstring_to_utf8(orig_text->start_char);
 		std::string orig_text_json = il2cppstring_to_jsonstring(orig_text->start_char);
 
-		// printf("_this: %p\n", _this);
+		auto* this_class = il2cpp_object_get_class(_this);
+		char* this_class_name = il2cpp_class_get_name(this_class);
+		// printf("Class: %s\n", this_class_name);
+
+		if (std::find(valid_textcommon_classes.begin(), valid_textcommon_classes.end(), this_class_name) == valid_textcommon_classes.end())
+		{
+			// printf("SKIP\n");
+			return orig_text;
+		}
+
+		// printf("GO\n");
 
 		// Check if _this is valid
 		auto bad = IsBadReadPtr(_this, 8);
@@ -1610,6 +1630,10 @@ namespace
 			il2cpp_method_get_param_count = reinterpret_cast<il2cpp_method_get_param_count_t>(GetProcAddress(game_assembly_module, "il2cpp_method_get_param_count"));
 			il2cpp_type_get_name = reinterpret_cast<il2cpp_type_get_name_t>(GetProcAddress(game_assembly_module, "il2cpp_type_get_name"));
 			il2cpp_method_get_param = reinterpret_cast<il2cpp_method_get_param_t>(GetProcAddress(game_assembly_module, "il2cpp_method_get_param"));
+			il2cpp_object_get_class = reinterpret_cast<il2cpp_object_get_class_t>(GetProcAddress(game_assembly_module, "il2cpp_object_get_class"));
+ 			il2cpp_object_get_size = reinterpret_cast<il2cpp_object_get_size_t>(GetProcAddress(game_assembly_module, "il2cpp_object_get_size"));
+			il2cpp_class_get_name = reinterpret_cast<il2cpp_class_get_name_t>(GetProcAddress(game_assembly_module, "il2cpp_class_get_name"));
+			il2cpp_class_get_namespace = reinterpret_cast<il2cpp_class_get_namespace_t>(GetProcAddress(game_assembly_module, "il2cpp_class_get_namespace"));
 
 			printf("1\n");
 

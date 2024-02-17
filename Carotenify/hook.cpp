@@ -37,7 +37,7 @@ namespace
 	il2cpp_class_get_name_t il2cpp_class_get_name;
 	il2cpp_class_get_namespace_t il2cpp_class_get_namespace;
 
-
+	HHOOK keyboard_hook;
 
 	std::map<int, std::string> text_id_to_string;
 	std::map<std::string, std::string> text_id_string_to_translation;
@@ -46,6 +46,7 @@ namespace
 	std::filesystem::file_time_type tl_last_modified;
 	std::set<Il2CppString*> stringid_pointers;
 	int debug_level = 0;
+	int max_debug_level = 2;
 	void* last_text_list_ptr = nullptr;
 
 	std::set<std::string> do_not_replace_strings = {
@@ -329,14 +330,6 @@ namespace
 		{
 			// printf("No translations.txt found\n");
 			return;
-		}
-
-		debug_level = 1;
-
-		std::string assembly_file = "assembly_dump.json";
-		if (file_exists(assembly_file))
-		{
-			debug_level = 2;
 		}
 
 		if (tl_first_check)
@@ -1303,7 +1296,6 @@ namespace
 		{
 			outfile << "\n}";
 			outfile.close();
-			debug_level = 2;
 		}
 
 		printf("Indexing text done\n");
@@ -1487,39 +1479,39 @@ namespace
 		return ret;
 	}
 
-	void* antext_settext_orig = nullptr;
-	void* antext_settext_hook(void* _this, Il2CppString* text)
-	{
-		printf("antext_settext_hook: %s\n", il2cppstring_to_utf8(text->start_char).c_str());
-		return reinterpret_cast<decltype(antext_settext_hook)*>(antext_settext_orig)(_this, text);
-	}
+	// void* antext_settext_orig = nullptr;
+	// void* antext_settext_hook(void* _this, Il2CppString* text)
+	// {
+	// 	printf("antext_settext_hook: %s\n", il2cppstring_to_utf8(text->start_char).c_str());
+	// 	return reinterpret_cast<decltype(antext_settext_hook)*>(antext_settext_orig)(_this, text);
+	// }
 
-	void* antext_gettext_orig = nullptr;
-	void* antext_gettext_hook(void* _this)
-	{
-		// printf("antext_gettext_hook\n");
-		void* ret = reinterpret_cast<decltype(antext_gettext_hook)*>(antext_gettext_orig)(_this);
-		return ret;
+	// void* antext_gettext_orig = nullptr;
+	// void* antext_gettext_hook(void* _this)
+	// {
+	// 	// printf("antext_gettext_hook\n");
+	// 	void* ret = reinterpret_cast<decltype(antext_gettext_hook)*>(antext_gettext_orig)(_this);
+	// 	return ret;
 	
-	}
+	// }
 
-	void* antext_getfixtext_orig = nullptr;
-	void* antext_getfixtext_hook(void* _this)
-	{
-		// printf("antext_getfixtext_hook\n");
-		void* ret = reinterpret_cast<decltype(antext_getfixtext_hook)*>(antext_getfixtext_orig)(_this);
-		return ret;
+	// void* antext_getfixtext_orig = nullptr;
+	// void* antext_getfixtext_hook(void* _this)
+	// {
+	// 	// printf("antext_getfixtext_hook\n");
+	// 	void* ret = reinterpret_cast<decltype(antext_getfixtext_hook)*>(antext_getfixtext_orig)(_this);
+	// 	return ret;
 	
-	}
+	// }
 
-	void* antext_getfixtext_wrt_orig = nullptr;
-	void* antext_getfixtext_wrt_hook(void* _this)
-	{
-		// printf("antext_getfixtext_wrt_hook\n");
-		void* ret = reinterpret_cast<decltype(antext_getfixtext_wrt_hook)*>(antext_getfixtext_wrt_orig)(_this);
-		return ret;
+	// void* antext_getfixtext_wrt_orig = nullptr;
+	// void* antext_getfixtext_wrt_hook(void* _this)
+	// {
+	// 	// printf("antext_getfixtext_wrt_hook\n");
+	// 	void* ret = reinterpret_cast<decltype(antext_getfixtext_wrt_hook)*>(antext_getfixtext_wrt_orig)(_this);
+	// 	return ret;
 	
-	}
+	// }
 
 	void* tcc_play_cut_orig = nullptr;
 	void* tcc_play_cut_hook(void* _this, void* play_info)
@@ -1635,33 +1627,31 @@ namespace
 			il2cpp_class_get_name = reinterpret_cast<il2cpp_class_get_name_t>(GetProcAddress(game_assembly_module, "il2cpp_class_get_name"));
 			il2cpp_class_get_namespace = reinterpret_cast<il2cpp_class_get_namespace_t>(GetProcAddress(game_assembly_module, "il2cpp_class_get_namespace"));
 
-			printf("1\n");
-
 			auto domain = il2cpp_domain_get();
 			// Print domain
 			printf("Domain: %p\n", domain);
 
 
 			auto mscorlib_assembly = il2cpp_domain_assembly_open(domain, "mscorlib.dll");
-			printf("mscorlib Assembly: %p\n", mscorlib_assembly);
+			// printf("mscorlib Assembly: %p\n", mscorlib_assembly);
 			auto mscorlib_image = il2cpp_assembly_get_image(mscorlib_assembly);
-			printf("mscorlib Image: %p\n", mscorlib_image);
+			// printf("mscorlib Image: %p\n", mscorlib_image);
 
 			auto environment_class = il2cpp_class_from_name(mscorlib_image, "System", "Environment");
-			printf("Environment: %p\n", environment_class);
+			// printf("Environment: %p\n", environment_class);
 
 			auto stack_trace_addr = il2cpp_class_get_method_from_name(environment_class, "get_StackTrace", 0)->methodPointer;
 			environment_get_stacktrace = reinterpret_cast<decltype(environment_get_stacktrace)>(stack_trace_addr);
 
 
 			auto ienumerator_class = il2cpp_class_from_name(mscorlib_image, "System.Collections", "IEnumerator");
-			printf("IEnumerator: %p\n", ienumerator_class);
+			// printf("IEnumerator: %p\n", ienumerator_class);
 
 			auto move_next_addr = il2cpp_class_get_method_from_name(ienumerator_class, "MoveNext", 0)->methodPointer;
-			printf("MoveNext: %p\n", move_next_addr);
+			// printf("MoveNext: %p\n", move_next_addr);
 
 			auto move_next_addr_offset = reinterpret_cast<void*>(move_next_addr);
-			printf("MoveNext Offset: %p\n", move_next_addr_offset);
+			// printf("MoveNext Offset: %p\n", move_next_addr_offset);
 
 			MH_CreateHook(move_next_addr_offset, move_next_hook, &move_next_orig);
 			MH_EnableHook(move_next_addr_offset);
@@ -1682,13 +1672,13 @@ namespace
 			auto unity_core_assembly = il2cpp_domain_assembly_open(domain, "UnityEngine.CoreModule.dll");
 			printf("Unity Core Assembly: %p\n", unity_core_assembly);
 			auto unity_core_image = il2cpp_assembly_get_image(unity_core_assembly);
-			printf("Unity Core Image: %p\n", unity_core_image);
+			// printf("Unity Core Image: %p\n", unity_core_image);
 
 			auto object_class = il2cpp_class_from_name(unity_core_image, "UnityEngine", "Object");
-			printf("Object: %p\n", object_class);
+			// printf("Object: %p\n", object_class);
 
 			auto to_string_addr = il2cpp_class_get_method_from_name(object_class, "ToString", 0)->methodPointer;
-			printf("to_string_addr: %p\n", to_string_addr);
+			// printf("to_string_addr: %p\n", to_string_addr);
 
 			auto to_string_addr_offset = reinterpret_cast<void*>(to_string_addr);
 			printf("to_string_addr_offset: %p\n", to_string_addr_offset);
@@ -1697,11 +1687,11 @@ namespace
 			MH_EnableHook(to_string_addr_offset);
 
 
-			auto set_name_addr = il2cpp_class_get_method_from_name(object_class, "set_name", 1)->methodPointer;
-			printf("set_name_addr: %p\n", set_name_addr);
+			// auto set_name_addr = il2cpp_class_get_method_from_name(object_class, "set_name", 1)->methodPointer;
+			// printf("set_name_addr: %p\n", set_name_addr);
 
-			auto set_name_addr_offset = reinterpret_cast<void*>(set_name_addr);
-			printf("set_name_addr_offset: %p\n", set_name_addr_offset);
+			// auto set_name_addr_offset = reinterpret_cast<void*>(set_name_addr);
+			// printf("set_name_addr_offset: %p\n", set_name_addr_offset);
 
 			// MH_CreateHook(set_name_addr_offset, set_name_hook, &set_name_orig);
 			// MH_EnableHook(set_name_addr_offset);
@@ -1709,62 +1699,62 @@ namespace
 
 
 
-			auto plugins_assembly = il2cpp_domain_assembly_open(domain, "Plugins.dll");
-			printf("Plugins Assembly: %p\n", plugins_assembly);
-			auto plugins_image = il2cpp_assembly_get_image(plugins_assembly);
-			printf("Plugins Image: %p\n", plugins_image);
+			// auto plugins_assembly = il2cpp_domain_assembly_open(domain, "Plugins.dll");
+			// // printf("Plugins Assembly: %p\n", plugins_assembly);
+			// auto plugins_image = il2cpp_assembly_get_image(plugins_assembly);
+			// // printf("Plugins Image: %p\n", plugins_image);
 
-			auto antext_class = il2cpp_class_from_name(plugins_image, "AnimateToUnity", "AnText");
-			printf("AnText: %p\n", antext_class);
+			// auto antext_class = il2cpp_class_from_name(plugins_image, "AnimateToUnity", "AnText");
+			// // printf("AnText: %p\n", antext_class);
 
-			auto antext_settext_addr = il2cpp_class_get_method_from_name(antext_class, "SetText", 1)->methodPointer;
-			printf("antext_settext_addr: %p\n", antext_settext_addr);
+			// auto antext_settext_addr = il2cpp_class_get_method_from_name(antext_class, "SetText", 1)->methodPointer;
+			// // printf("antext_settext_addr: %p\n", antext_settext_addr);
 
-			auto antext_settext_addr_offset = reinterpret_cast<void*>(antext_settext_addr);
-			printf("antext_settext_addr_offset: %p\n", antext_settext_addr_offset);
+			// auto antext_settext_addr_offset = reinterpret_cast<void*>(antext_settext_addr);
+			// // printf("antext_settext_addr_offset: %p\n", antext_settext_addr_offset);
 
-			MH_CreateHook(antext_settext_addr_offset, antext_settext_hook, &antext_settext_orig);
-			MH_EnableHook(antext_settext_addr_offset);
-
-
-			auto antext_gettext_addr = il2cpp_class_get_method_from_name(antext_class, "get_Text", 0)->methodPointer;
-			printf("antext_gettext_addr: %p\n", antext_gettext_addr);
-
-			auto antext_gettext_addr_offset = reinterpret_cast<void*>(antext_gettext_addr);
-			printf("antext_gettext_addr_offset: %p\n", antext_gettext_addr_offset);
-
-			MH_CreateHook(antext_gettext_addr_offset, antext_gettext_hook, &antext_gettext_orig);
-			MH_EnableHook(antext_gettext_addr_offset);
+			// MH_CreateHook(antext_settext_addr_offset, antext_settext_hook, &antext_settext_orig);
+			// MH_EnableHook(antext_settext_addr_offset);
 
 
-			auto antext_getfixtext_addr = il2cpp_class_get_method_from_name(antext_class, "get_FixText", 0)->methodPointer;
-			printf("antext_getfixtext_addr: %p\n", antext_getfixtext_addr);
+			// auto antext_gettext_addr = il2cpp_class_get_method_from_name(antext_class, "get_Text", 0)->methodPointer;
+			// // printf("antext_gettext_addr: %p\n", antext_gettext_addr);
 
-			auto antext_getfixtext_addr_offset = reinterpret_cast<void*>(antext_getfixtext_addr);
-			printf("antext_getfixtext_addr_offset: %p\n", antext_getfixtext_addr_offset);
+			// auto antext_gettext_addr_offset = reinterpret_cast<void*>(antext_gettext_addr);
+			// // printf("antext_gettext_addr_offset: %p\n", antext_gettext_addr_offset);
 
-			MH_CreateHook(antext_getfixtext_addr_offset, antext_getfixtext_hook, &antext_getfixtext_orig);
-			MH_EnableHook(antext_getfixtext_addr_offset);
+			// MH_CreateHook(antext_gettext_addr_offset, antext_gettext_hook, &antext_gettext_orig);
+			// MH_EnableHook(antext_gettext_addr_offset);
 
 
-			auto antext_getfixtext_wrt_addr = il2cpp_class_get_method_from_name(antext_class, "get_FixTextWithoutRichText", 0)->methodPointer;
-			printf("antext_getfixtext_wrt_addr: %p\n", antext_getfixtext_wrt_addr);
+			// auto antext_getfixtext_addr = il2cpp_class_get_method_from_name(antext_class, "get_FixText", 0)->methodPointer;
+			// // printf("antext_getfixtext_addr: %p\n", antext_getfixtext_addr);
 
-			auto antext_getfixtext_wrt_addr_offset = reinterpret_cast<void*>(antext_getfixtext_wrt_addr);
-			printf("antext_getfixtext_wrt_addr_offset: %p\n", antext_getfixtext_wrt_addr_offset);
+			// auto antext_getfixtext_addr_offset = reinterpret_cast<void*>(antext_getfixtext_addr);
+			// // printf("antext_getfixtext_addr_offset: %p\n", antext_getfixtext_addr_offset);
 
-			MH_CreateHook(antext_getfixtext_wrt_addr_offset, antext_getfixtext_wrt_hook, &antext_getfixtext_wrt_orig);
-			MH_EnableHook(antext_getfixtext_wrt_addr_offset);
+			// MH_CreateHook(antext_getfixtext_addr_offset, antext_getfixtext_hook, &antext_getfixtext_orig);
+			// MH_EnableHook(antext_getfixtext_addr_offset);
+
+
+			// auto antext_getfixtext_wrt_addr = il2cpp_class_get_method_from_name(antext_class, "get_FixTextWithoutRichText", 0)->methodPointer;
+			// // printf("antext_getfixtext_wrt_addr: %p\n", antext_getfixtext_wrt_addr);
+
+			// auto antext_getfixtext_wrt_addr_offset = reinterpret_cast<void*>(antext_getfixtext_wrt_addr);
+			// // printf("antext_getfixtext_wrt_addr_offset: %p\n", antext_getfixtext_wrt_addr_offset);
+
+			// MH_CreateHook(antext_getfixtext_wrt_addr_offset, antext_getfixtext_wrt_hook, &antext_getfixtext_wrt_orig);
+			// MH_EnableHook(antext_getfixtext_wrt_addr_offset);
 
 
 
 
 			auto assembly2 = il2cpp_domain_assembly_open(domain, "UnityEngine.TextRenderingModule.dll");
-			printf("Assembly2: %p\n", assembly2);
+			printf("TextRenderingModule Assembly: %p\n", assembly2);
 			auto image2 = il2cpp_assembly_get_image(assembly2);
-			printf("Image2: %p\n", image2);
+			// printf("Image2: %p\n", image2);
 			auto text_generator_class = il2cpp_class_from_name(image2, "UnityEngine", "TextGenerator");
-			printf("TextGenerator: %p\n", text_generator_class);
+			// printf("TextGenerator: %p\n", text_generator_class);
 			auto populate_with_errors_addr = il2cpp_class_get_method_from_name(text_generator_class, "PopulateWithErrors", 3)->methodPointer;
 			printf("populate_with_errors_addr: %p\n", populate_with_errors_addr);
 			auto populate_with_errors_addr_offset = reinterpret_cast<void*>(populate_with_errors_addr);
@@ -1774,7 +1764,7 @@ namespace
 
 
 			auto populate_addr = il2cpp_class_get_method_from_name(text_generator_class, "Populate", 2)->methodPointer;
-			printf("populate_addr: %p\n", populate_addr);
+			// printf("populate_addr: %p\n", populate_addr);
 			auto populate_addr_offset = reinterpret_cast<void*>(populate_addr);
 
 			MH_CreateHook(populate_addr_offset, populate_hook, &populate_orig);
@@ -1786,20 +1776,20 @@ namespace
 			printf("uma_assembly: %p\n", uma_assembly);
 
 			auto uma_image = il2cpp_assembly_get_image(uma_assembly);
-			printf("uma_image: %p\n", uma_image);
+			// printf("uma_image: %p\n", uma_image);
 
 
 			auto uimanager_class = il2cpp_class_from_name(uma_image, "Gallop", "UIManager");
-			printf("UIManager: %p\n", uimanager_class);
+			// printf("UIManager: %p\n", uimanager_class);
 
 			// print_class_methods_with_types(uimanager_class);
 
 			const Il2CppTypeEnum types[2] = { Il2CppTypeEnum::IL2CPP_TYPE_VALUETYPE, Il2CppTypeEnum::IL2CPP_TYPE_VALUETYPE };
 			auto uimanager_SetHeaderTitleText1_addr = find_class_method_with_name_and_types(uimanager_class, "SetHeaderTitleText", types);
-			printf("uimanager_SetHeaderTitleText1_addr: %p\n", uimanager_SetHeaderTitleText1_addr);
+			// printf("uimanager_SetHeaderTitleText1_addr: %p\n", uimanager_SetHeaderTitleText1_addr);
 
 			auto uimanager_SetHeaderTitleText1_addr_offset = reinterpret_cast<void*>(uimanager_SetHeaderTitleText1_addr);
-			printf("uimanager_SetHeaderTitleText1_addr_offset: %p\n", uimanager_SetHeaderTitleText1_addr_offset);
+			// printf("uimanager_SetHeaderTitleText1_addr_offset: %p\n", uimanager_SetHeaderTitleText1_addr_offset);
 
 			MH_CreateHook(uimanager_SetHeaderTitleText1_addr_offset, uimanager_SetHeaderTitleText1_hook, &uimanager_SetHeaderTitleText1_orig);
 			MH_EnableHook(uimanager_SetHeaderTitleText1_addr_offset);
@@ -1807,10 +1797,10 @@ namespace
 
 			const Il2CppTypeEnum types2[2] = { Il2CppTypeEnum::IL2CPP_TYPE_STRING, Il2CppTypeEnum::IL2CPP_TYPE_VALUETYPE };
 			auto uimanager_SetHeaderTitleText2_addr = find_class_method_with_name_and_types(uimanager_class, "SetHeaderTitleText", types2);
-			printf("uimanager_SetHeaderTitleText2_addr: %p\n", uimanager_SetHeaderTitleText2_addr);
+			// printf("uimanager_SetHeaderTitleText2_addr: %p\n", uimanager_SetHeaderTitleText2_addr);
 
 			auto uimanager_SetHeaderTitleText2_addr_offset = reinterpret_cast<void*>(uimanager_SetHeaderTitleText2_addr);
-			printf("uimanager_SetHeaderTitleText2_addr_offset: %p\n", uimanager_SetHeaderTitleText2_addr_offset);
+			// printf("uimanager_SetHeaderTitleText2_addr_offset: %p\n", uimanager_SetHeaderTitleText2_addr_offset);
 
 			MH_CreateHook(uimanager_SetHeaderTitleText2_addr_offset, uimanager_SetHeaderTitleText2_hook, &uimanager_SetHeaderTitleText2_orig);
 			MH_EnableHook(uimanager_SetHeaderTitleText2_addr_offset);
@@ -1825,7 +1815,7 @@ namespace
 			printf("LocalizeJP: %p\n", localize_jp_class);
 
 			auto localize_jp_get_addr = il2cpp_class_get_method_from_name(localize_jp_class, "Get", 1)->methodPointer;
-			printf("localize_jp_get_addr: %p\n", localize_jp_get_addr);
+			// printf("localize_jp_get_addr: %p\n", localize_jp_get_addr);
 
 			auto localize_jp_get_addr_offset = reinterpret_cast<void*>(localize_jp_get_addr);
 			printf("localize_jp_get_addr_offset: %p\n", localize_jp_get_addr_offset);
@@ -1843,13 +1833,13 @@ namespace
 			
 
 			const auto single_header_model_class = il2cpp_class_from_name(uma_image, "Gallop", "SingleModeMainViewHeaderModel");
-			printf("single_header_model_class: %p\n", single_header_model_class);
+			// printf("single_header_model_class: %p\n", single_header_model_class);
 
 			auto get_scen_race_name_addr = il2cpp_class_get_method_from_name(single_header_model_class, "GetScenarioRaceName", 0)->methodPointer;
-			printf("get_scen_race_name_addr: %p\n", get_scen_race_name_addr);
+			// printf("get_scen_race_name_addr: %p\n", get_scen_race_name_addr);
 
 			auto get_scen_race_name_addr_offset = reinterpret_cast<void*>(get_scen_race_name_addr);
-			printf("get_scen_race_name_addr_offset: %p\n", get_scen_race_name_addr_offset);
+			// printf("get_scen_race_name_addr_offset: %p\n", get_scen_race_name_addr_offset);
 
 			MH_CreateHook(get_scen_race_name_addr_offset, get_scen_race_name_hook, &get_scen_race_name_orig);
 			MH_EnableHook(get_scen_race_name_addr_offset);
@@ -1861,7 +1851,7 @@ namespace
 
 			// set_text
 			auto textcommon_settext_addr = il2cpp_class_get_method_from_name(textcommon_class, "set_text", 1)->methodPointer;
-			printf("textcommon_settext_addr: %p\n", textcommon_settext_addr);
+			// printf("textcommon_settext_addr: %p\n", textcommon_settext_addr);
 
 			auto textcommon_settext_addr_offset = reinterpret_cast<void*>(textcommon_settext_addr);
 			printf("textcommon_settext_addr_offset: %p\n", textcommon_settext_addr_offset);
@@ -1872,7 +1862,7 @@ namespace
 
 			// get_textid
 			auto textcommon_gettextid_addr = il2cpp_class_get_method_from_name(textcommon_class, "get_TextId", 0)->methodPointer;
-			printf("textcommon_gettextid_addr: %p\n", textcommon_gettextid_addr);
+			// printf("textcommon_gettextid_addr: %p\n", textcommon_gettextid_addr);
 
 			auto textcommon_gettextid_addr_offset = reinterpret_cast<void*>(textcommon_gettextid_addr);
 			printf("textcommon_gettextid_addr_offset: %p\n", textcommon_gettextid_addr_offset);
@@ -1883,7 +1873,7 @@ namespace
 
 			// set_textid
 			auto textcommon_settextid_addr = il2cpp_class_get_method_from_name(textcommon_class, "set_TextId", 1)->methodPointer;
-			printf("textcommon_settextid_addr: %p\n", textcommon_settextid_addr);
+			// printf("textcommon_settextid_addr: %p\n", textcommon_settextid_addr);
 
 			auto textcommon_settextid_addr_offset = reinterpret_cast<void*>(textcommon_settextid_addr);
 			printf("textcommon_settextid_addr_offset: %p\n", textcommon_settextid_addr_offset);
@@ -1894,7 +1884,7 @@ namespace
 
 			// get_textidstring
 			auto textcommon_gettextid_string_addr = il2cpp_class_get_method_from_name(textcommon_class, "get_TextIdString", 0)->methodPointer;
-			printf("textcommon_gettextid_string_addr: %p\n", textcommon_gettextid_string_addr);
+			// printf("textcommon_gettextid_string_addr: %p\n", textcommon_gettextid_string_addr);
 
 			auto textcommon_gettextid_string_addr_offset = reinterpret_cast<void*>(textcommon_gettextid_string_addr);
 			printf("textcommon_gettextid_string_addr_offset: %p\n", textcommon_gettextid_string_addr_offset);
@@ -1905,7 +1895,7 @@ namespace
 
 			// get_text
 			auto textcommon_gettext_addr = il2cpp_class_get_method_from_name(textcommon_class, "get_text", 0)->methodPointer;
-			printf("textcommon_gettext_addr: %p\n", textcommon_gettext_addr);
+			// printf("textcommon_gettext_addr: %p\n", textcommon_gettext_addr);
 
 			auto textcommon_gettext_addr_offset = reinterpret_cast<void*>(textcommon_gettext_addr);
 			printf("textcommon_gettext_addr_offset: %p\n", textcommon_gettext_addr_offset);
@@ -1914,23 +1904,23 @@ namespace
 			MH_EnableHook(textcommon_gettext_addr_offset);
 
 			auto trainingparamchangea2u_class = il2cpp_class_from_name(uma_image, "Gallop", "TrainingParamChangeA2U");
-			printf("trainingparamchangea2u_class: %p\n", trainingparamchangea2u_class);
+			// printf("trainingparamchangea2u_class: %p\n", trainingparamchangea2u_class);
 
 			auto tpca2u_getcaptiontext_addr = il2cpp_class_get_method_from_name(trainingparamchangea2u_class, "GetCaptionText", 1)->methodPointer;
-			printf("tpca2u_getcaptiontext_addr: %p\n", tpca2u_getcaptiontext_addr);
+			// printf("tpca2u_getcaptiontext_addr: %p\n", tpca2u_getcaptiontext_addr);
 
 			auto tpca2u_getcaptiontext_addr_offset = reinterpret_cast<void*>(tpca2u_getcaptiontext_addr);
-			printf("tpca2u_getcaptiontext_addr_offset: %p\n", tpca2u_getcaptiontext_addr_offset);
+			// printf("tpca2u_getcaptiontext_addr_offset: %p\n", tpca2u_getcaptiontext_addr_offset);
 
 			MH_CreateHook(tpca2u_getcaptiontext_addr_offset, tpca2u_getcaptiontext_hook, &tpca2u_getcaptiontext_orig);
 			MH_EnableHook(tpca2u_getcaptiontext_addr_offset);
 
 
 			auto tpca2u_getskillcaptiontext_addr = il2cpp_class_get_method_from_name(trainingparamchangea2u_class, "GetSkillCaptionText", 2)->methodPointer;
-			printf("tpca2u_getskillcaptiontext_addr: %p\n", tpca2u_getskillcaptiontext_addr);
+			// printf("tpca2u_getskillcaptiontext_addr: %p\n", tpca2u_getskillcaptiontext_addr);
 
 			auto tpca2u_getskillcaptiontext_addr_offset = reinterpret_cast<void*>(tpca2u_getskillcaptiontext_addr);
-			printf("tpca2u_getskillcaptiontext_addr_offset: %p\n", tpca2u_getskillcaptiontext_addr_offset);
+			// printf("tpca2u_getskillcaptiontext_addr_offset: %p\n", tpca2u_getskillcaptiontext_addr_offset);
 
 			MH_CreateHook(tpca2u_getskillcaptiontext_addr_offset, tpca2u_getskillcaptiontext_hook, &tpca2u_getskillcaptiontext_orig);
 			MH_EnableHook(tpca2u_getskillcaptiontext_addr_offset);
@@ -1972,23 +1962,23 @@ namespace
 
 
 			auto training_cutscene_controller_class = il2cpp_class_from_name(uma_image, "Gallop", "SingleModeMainTrainingCuttController");
-			printf("training_cutscene_controller_class: %p\n", training_cutscene_controller_class);
+			// printf("training_cutscene_controller_class: %p\n", training_cutscene_controller_class);
 
 			auto tcc_get_text_list_addr = il2cpp_class_get_method_from_name(training_cutscene_controller_class, "GetTrainingEffectMessageWindowTextList", 0)->methodPointer;
-			printf("tcc_get_text_list_addr: %p\n", tcc_get_text_list_addr);
+			// printf("tcc_get_text_list_addr: %p\n", tcc_get_text_list_addr);
 
 			auto tcc_get_text_list_addr_offset = reinterpret_cast<void*>(tcc_get_text_list_addr);
-			printf("tcc_get_text_list_addr_offset: %p\n", tcc_get_text_list_addr_offset);
+			// printf("tcc_get_text_list_addr_offset: %p\n", tcc_get_text_list_addr_offset);
 
 			MH_CreateHook(tcc_get_text_list_addr_offset, tcc_get_text_list_hook, &tcc_get_text_list_orig);
 			MH_EnableHook(tcc_get_text_list_addr_offset);
 
 
 			auto tcc_play_cut_addr = il2cpp_class_get_method_from_name(training_cutscene_controller_class, "PlayTrainingCut", 1)->methodPointer;
-			printf("tcc_play_cut_addr: %p\n", tcc_play_cut_addr);
+			// printf("tcc_play_cut_addr: %p\n", tcc_play_cut_addr);
 
 			auto tcc_play_cut_addr_offset = reinterpret_cast<void*>(tcc_play_cut_addr);
-			printf("tcc_play_cut_addr_offset: %p\n", tcc_play_cut_addr_offset);
+			// printf("tcc_play_cut_addr_offset: %p\n", tcc_play_cut_addr_offset);
 
 			MH_CreateHook(tcc_play_cut_addr_offset, tcc_play_cut_hook, &tcc_play_cut_orig);
 			MH_EnableHook(tcc_play_cut_addr_offset);
@@ -2001,6 +1991,8 @@ namespace
 			MH_DisableHook(LoadLibraryW);
 			MH_RemoveHook(LoadLibraryW);
 
+			printf("=== Carotene successfully initialized ===\n");
+
 			return LoadLibraryW(path);
 		}
 
@@ -2008,9 +2000,101 @@ namespace
 	}
 }
 
+const int ctrl_key = 162;
+const int d_key = 68;
+
+const std::set<int> keys_to_check = {
+	ctrl_key,
+	d_key
+};
+std::set<int> pressed_keys;
+
+void add_key(int key)
+{
+	// Check if this key should be checked
+	if (keys_to_check.find(key) == keys_to_check.end())
+	{
+		return;
+	}
+
+	pressed_keys.insert(key);
+}
+
+bool is_pressed(int key)
+{
+	return pressed_keys.find(key) != pressed_keys.end();
+}
+
+void rem_key(int key)
+{
+	if (is_pressed(key))
+	{
+		pressed_keys.erase(key);
+	}
+}
+
+LRESULT CALLBACK keyboard_hook_proc(int nCode, WPARAM wParam, LPARAM lParam)
+{
+	if (nCode >= 0)
+	{
+		if (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN)
+		{
+			KBDLLHOOKSTRUCT hooked_key = *((KBDLLHOOKSTRUCT*)lParam);
+			int key = hooked_key.vkCode;
+			add_key(key);
+
+			// Keyboard shortcuts go here
+			if (is_pressed(ctrl_key) && is_pressed(d_key))
+			{
+				debug_level++;
+				if (debug_level > max_debug_level)
+				{
+					debug_level = 0;
+				}
+				printf("Debug level: %d\n", debug_level);
+			}
+		}
+
+		if (wParam == WM_KEYUP || wParam == WM_SYSKEYUP)
+		{
+			KBDLLHOOKSTRUCT hooked_key = *((KBDLLHOOKSTRUCT*)lParam);
+			int key = hooked_key.vkCode;
+			rem_key(key);
+		}
+	}
+
+	return CallNextHookEx(keyboard_hook, nCode, wParam, lParam);
+}
+
+
+
+void keyboard_input_thread()
+{
+	HINSTANCE handle = GetModuleHandle(NULL);
+	keyboard_hook = SetWindowsHookEx(WH_KEYBOARD_LL, keyboard_hook_proc, handle, 0);
+
+	MSG msg;
+	while (GetMessage(&msg, NULL, 0, 0) != 0)
+	{
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
+	}
+
+	UnhookWindowsHookEx(keyboard_hook);
+}
+
+
+void handle_keyboard_input()
+{
+	CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)keyboard_input_thread, NULL, 0, NULL);
+}
+
+
 void attach()
 {
 	create_debug_console();
+
+	printf("=== Starting Carotene ===\n");
 
 	if (MH_Initialize() != MH_OK)
 	{
@@ -2033,6 +2117,8 @@ void attach()
 		printf("tlg.dll found, loading...\n");
 		LoadLibraryW(L"tlg.dll");
 	}
+
+	handle_keyboard_input();
 }
 
 void detach()

@@ -343,7 +343,7 @@ namespace
 
 			if (last_modified == tl_last_modified)
 			{
-				printf("No changes to translations.txt\n");
+				// printf("No changes to translations.txt\n");
 				return;
 			}
 
@@ -1461,7 +1461,7 @@ namespace
 			std::string textid_string = text_id_to_string[text_id];
 			if (text_id_string_to_translation.find(textid_string) != text_id_string_to_translation.end())
 			{
-				printf("Found translation for %s\n", textid_string.c_str());
+				// printf("Found translation for %s\n", textid_string.c_str());
 				std::string translation = text_id_string_to_translation[textid_string];
 				remove_all_tags(translation);
 				return uimanager_SetHeaderTitleText2_hook(_this, il2cpp_string_new(translation.data()), guide_id);

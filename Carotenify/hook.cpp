@@ -46,7 +46,7 @@ namespace
 	std::filesystem::file_time_type tl_last_modified;
 	std::set<Il2CppString*> stringid_pointers;
 	int debug_level = 0;
-	int max_debug_level = 2;
+	int max_debug_level = 3;
 	void* last_text_list_ptr = nullptr;
 
 	std::set<std::string> do_not_replace_strings = {
@@ -245,6 +245,8 @@ namespace
 		// replaceAll(in_str, "<ssc>", "");  // Scale tag start
 		// replaceAll(in_str, "<esc>", "");  // Scale tag end
 		removePropertyTag(in_str, "sc");
+		removePropertyTag(in_str, "p");
+		replaceAll(in_str, "</p>", "");
 	}
 
 	std::string il2cppstring_to_utf8(std::wstring str)
@@ -865,13 +867,58 @@ namespace
 	}
 
 
-	std::string handle_timespans(std::string str){
-		str = handle_timespan(str, "<sy>", "<ey>", "year", "years");
-		str = handle_timespan(str, "<sd>", "<ed>", "day", "days");
-		str = handle_timespan(str, "<sh>", "<eh>", "hour", "hours");
-		str = handle_timespan(str, "<sm>", "<em>", "min", "mins");
-		str = handle_timespan(str, "<ss>", "<es>", "sec", "secs");
-		str = handle_timespan(str, "<st>", "<et>", "turn", "turns");
+	std::string handle_plurals(std::string str){
+		// Plurals are like this <p=turn,turns>10</p>
+		while (str.find("<p=") != std::string::npos)
+		{
+			auto start = str.find("<p=");
+			auto end = str.find("</p>", start);
+
+			if (end == std::string::npos)
+			{
+				// No end tag found
+				break;
+			}
+
+			// This function also removes the start tag!
+			std::string param = getPropertyTag(str, "p");
+			removePropertyTag(str, "p");
+
+			// End position has changed
+			end = str.find("</p>", start);
+
+			// Split the param into singular and plural
+			std::string singular;
+			std::string plural;
+			std::istringstream iss(param);
+			std::getline(iss, singular, ',');
+			std::getline(iss, plural, ',');
+
+			std::string substr = str.substr(start, end - start);
+
+			int num = -1;
+
+			try
+			{
+				num = std::stoi(substr);
+			}
+			catch (const std::invalid_argument const& ex)
+			{
+				
+			}
+
+			std::string new_part;
+			if (num == 1)
+			{
+				new_part = singular;
+			} else {
+				new_part = plural;
+			}
+
+			substr += " " + new_part;
+
+			str.replace(start, end - start + 4, substr);
+		}
 
 		return str;
 	}
@@ -926,7 +973,7 @@ namespace
 		std::tie(str_utf8, settings->fontSize) = handle_scale_tag_v2(str_utf8, settings->fontSize);
 
 		str_utf8 = handle_ordinal_numberals(str_utf8);
-		str_utf8 = handle_timespans(str_utf8);
+		str_utf8 = handle_plurals(str_utf8);
 
 		if (str_utf8.find("<a7>") != std::string::npos)
 		{
@@ -1068,6 +1115,11 @@ namespace
 		// Resize font
 		// settings->fontSize = round(settings->fontSize * 0.9f);
 
+		if (debug_level == 3)
+		{
+			return reinterpret_cast<decltype(populate_with_errors_hook)*>(populate_with_errors_orig)(_this, str, settings, context);
+		}
+
 		std::string str_utf8 = il2cppstring_to_utf8(str->start_char);
 		std::string str_json = il2cppstring_to_jsonstring(str->start_char);
 		
@@ -1148,6 +1200,11 @@ namespace
 
 		Il2CppString* out_text = reinterpret_cast<decltype(localize_jp_get_hook)*>(localize_jp_get_orig)(id);
 
+		if (debug_level == 3)
+		{
+			return out_text;
+		}
+
 		// if (id == 4218)
 		// {
 		// 	stacktrace();
@@ -1160,6 +1217,8 @@ namespace
 
 		// printf("=== JP GET ===");
 		// printf("ID: %d\n", id);
+		std::string translation;
+
 		if (text_id_to_string.find(id) != text_id_to_string.end())
 		{
 			std::string textid_string = text_id_to_string[id];
@@ -1190,7 +1249,7 @@ namespace
 				}
 			} else
 			{
-				std::string translation = text_id_string_to_translation[textid_string];
+				translation = text_id_string_to_translation[textid_string];
 				// printf("Translation: %s\n", translation.c_str());
 
 				if (debug_level > 1)
@@ -1229,7 +1288,21 @@ namespace
 
 		if (debug_level > 1 && no_print_ids.find(id) == no_print_ids.end())
 		{
+			// translation = il2cppstring_to_utf8(out_text->start_char);
+			// if (translation.find("<force>") != std::string::npos)
+			// {
+			// 	stacktrace();
+			// }
 			printf("Fetch %d: %s\n", id, il2cppstring_to_utf8(out_text->start_char).c_str());
+		}
+
+		// TODO: This kinda sucks, maybe there's a better way?
+		std::string utf8_str = il2cppstring_to_utf8(out_text->start_char);
+
+		if (in_stacktrace("at Gallop.SingleModeMainTrainingController.OnSelectTraining "))
+		{
+			remove_all_tags(utf8_str);
+			out_text = il2cpp_string_new(utf8_str.data());
 		}
 
 		// printf("Fetch %d: %s\n", id, il2cppstring_to_utf8(out_text->start_char).c_str());
@@ -1349,6 +1422,12 @@ namespace
 		{
 			return orig_text;
 		}
+
+		if (debug_level == 3)
+		{
+			return orig_text;
+		}
+
 		// printf("textcommon_gettext_hook: %s\n", il2cppstring_to_utf8(orig_text->start_char).c_str());
 
 		// return orig_text;

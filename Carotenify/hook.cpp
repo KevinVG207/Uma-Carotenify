@@ -48,6 +48,7 @@ namespace
 	int debug_level = 0;
 	int max_debug_level = 3;
 	void* last_text_list_ptr = nullptr;
+	uintptr_t last_story_timeline_controller = 0;
 
 	std::set<std::string> do_not_replace_strings = {
 		"SingleMode418033"
@@ -1636,6 +1637,57 @@ namespace
 	
 	}
 
+	void* stc_initialize_orig = nullptr;
+	void* stc_initialize_hook(uintptr_t _this)
+	{
+		printf("stc_initialize_hook\n");
+		void* ret = reinterpret_cast<decltype(stc_initialize_hook)*>(stc_initialize_orig)(_this);
+		return ret;
+	}
+
+	void* stc_release_orig = nullptr;
+	void* stc_release_hook(uintptr_t _this)
+	{
+		printf("stc_release_hook\n");
+		if (last_story_timeline_controller == _this){
+			last_story_timeline_controller = 0;
+		}
+		void* ret = reinterpret_cast<decltype(stc_release_hook)*>(stc_release_orig)(_this);
+		return ret;
+	}
+
+	void* stc_onendstory_orig = nullptr;
+	void* stc_onendstory_hook(uintptr_t _this)
+	{
+		printf("stc_onendstory_hook\n");
+		if (last_story_timeline_controller == _this){
+			last_story_timeline_controller = 0;
+		}
+		void* ret = reinterpret_cast<decltype(stc_onendstory_hook)*>(stc_onendstory_orig)(_this);
+		return ret;
+	}
+
+	void* stc_gotoblock_orig = nullptr;
+	void* stc_gotoblock_hook(uintptr_t _this, int block_id, bool weakenCySpring, bool isUpdate, bool isChoice)
+	{
+		printf("stc_gotoblock_hook\n");
+		printf("block_id: %d\n", block_id);
+		printf("weakenCySpring: %d\n", weakenCySpring);
+		printf("isUpdate: %d\n", isUpdate);
+		printf("isChoice: %d\n", isChoice);
+		last_story_timeline_controller = _this;
+		void* ret = reinterpret_cast<decltype(stc_gotoblock_hook)*>(stc_gotoblock_orig)(_this, block_id, weakenCySpring, isUpdate, isChoice);
+		return ret;
+	}
+
+	void* stc_gotoblockforskip_orig = nullptr;
+	void* stc_gotoblockforskip_hook(void* _this, int block_id, void* weakenCySpring)
+	{
+		printf("stc_gotoblockforskip_hook\n");
+		void* ret = reinterpret_cast<decltype(stc_gotoblockforskip_hook)*>(stc_gotoblockforskip_orig)(_this, block_id, weakenCySpring);
+		return ret;
+	}
+
 
 	void bootstrap_carrot_juicer()
 	{
@@ -2005,6 +2057,52 @@ namespace
 			MH_EnableHook(tpca2u_getskillcaptiontext_addr_offset);
 
 
+			auto storyTimelineController_class = il2cpp_class_from_name(uma_image, "Gallop", "StoryTimelineController");
+
+			auto stc_initialize = il2cpp_class_get_method_from_name(storyTimelineController_class, "Initialize", 0)->methodPointer;
+			// printf("stc_initialize: %p\n", stc_initialize);
+
+			auto stc_initialize_offset = reinterpret_cast<void*>(stc_initialize);
+			// printf("stc_initialize_offset: %p\n", stc_initialize_offset);
+
+			MH_CreateHook(stc_initialize_offset, stc_initialize_hook, &stc_initialize_orig);
+			MH_EnableHook(stc_initialize_offset);
+
+
+			auto stc_release = il2cpp_class_get_method_from_name(storyTimelineController_class, "Release", 0)->methodPointer;
+			// printf("stc_release: %p\n", stc_release);
+
+			auto stc_release_offset = reinterpret_cast<void*>(stc_release);
+			// printf("stc_release_offset: %p\n", stc_release_offset);
+
+			MH_CreateHook(stc_release_offset, stc_release_hook, &stc_release_orig);
+			MH_EnableHook(stc_release_offset);
+
+
+			auto stc_onendstory_addr = il2cpp_class_get_method_from_name(storyTimelineController_class, "OnEndStory", 0)->methodPointer;
+
+			auto stc_onendstory_offset = reinterpret_cast<void*>(stc_onendstory_addr);
+
+			MH_CreateHook(stc_onendstory_offset, stc_onendstory_hook, &stc_onendstory_orig);
+			MH_EnableHook(stc_onendstory_offset);
+
+
+			auto stc_gotoblock_addr = il2cpp_class_get_method_from_name(storyTimelineController_class, "GotoBlock", 4)->methodPointer;
+
+			auto stc_gotoblock_offset = reinterpret_cast<void*>(stc_gotoblock_addr);
+
+			MH_CreateHook(stc_gotoblock_offset, stc_gotoblock_hook, &stc_gotoblock_orig);
+			MH_EnableHook(stc_gotoblock_offset);
+
+
+			auto stc_gotoblockforskip_addr = il2cpp_class_get_method_from_name(storyTimelineController_class, "GotoBlockForSkip", 2)->methodPointer;
+
+			auto stc_gotoblockforskip_offset = reinterpret_cast<void*>(stc_gotoblockforskip_addr);
+
+			MH_CreateHook(stc_gotoblockforskip_offset, stc_gotoblockforskip_hook, &stc_gotoblockforskip_orig);
+			MH_EnableHook(stc_gotoblockforskip_offset);
+
+
 			// auto icustomtextcomponent_class = il2cpp_class_from_name(uma_image, "Gallop", "ICustomTextComponent");
 			// printf("ICustomTextComponent: %p\n", icustomtextcomponent_class);
 
@@ -2168,6 +2266,133 @@ void handle_keyboard_input()
 	CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)keyboard_input_thread, NULL, 0, NULL);
 }
 
+void file_check_thread()
+{
+	typedef std::multimap<std::filesystem::file_time_type, std::filesystem::directory_entry> result_set_t;
+	std::wstring tmp_folder_raw = L"%TEMP%\\carotenify";
+	// Expand the environment variable
+	std::wstring tmp_folder_expanded;
+	tmp_folder_expanded.resize(MAX_PATH);
+	DWORD result = ExpandEnvironmentStringsW(tmp_folder_raw.c_str(), &tmp_folder_expanded[0], MAX_PATH);
+	if (result == 0)
+	{
+		printf("Failed to expand environment string\n");
+		return;
+	}
+	tmp_folder_expanded.resize(result - 1);
+	std::filesystem::path tmp_folder(tmp_folder_expanded);
+
+	// std::filesystem::path tmp_folder("%TEMP%\\carotene");
+	while (true)
+	{
+		if (!std::filesystem::exists(tmp_folder))
+		{
+			std::filesystem::create_directory(tmp_folder);
+		}
+
+		std::filesystem::directory_iterator end_iter;
+		result_set_t results;
+
+		// Iterate through files in tmp folder, ordered by date
+		for(std::filesystem::directory_iterator dir_iter(tmp_folder) ; dir_iter != end_iter ; ++dir_iter)
+		{
+			if (std::filesystem::is_regular_file(dir_iter->status()))
+			{
+				auto last_time = std::filesystem::last_write_time(dir_iter->path());
+				results.insert(result_set_t::value_type(last_time, *dir_iter));
+			}
+		}
+
+		// If there are files, load them
+		if (!results.empty())
+		{
+			for(auto it = results.begin() ; it != results.end() ; ++it)
+			{
+				auto file_path = it->second.path();
+				auto file_name = file_path.filename().string();
+				printf("Loading %s\n", file_name.c_str());
+				try {
+					// Read file as string
+					std::ifstream file(file_path);
+					std::string file_contents((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+					file.close();
+
+					std::filesystem::remove(file_path);
+
+					printf("File contents: %s\n", file_contents.c_str());
+
+
+					std::istringstream iss(file_path.string());
+
+					std::string file_rest;
+					std::string file_type;
+					std::getline(iss, file_rest, '.');
+					std::getline(iss, file_type, '.');
+
+					// printf("File time: %s\n", file_rest.c_str());
+					// printf("File type: %s\n", file_type.c_str());
+
+					if (file_type == "gotoBlock")
+					{
+						if (last_story_timeline_controller != 0)
+						{
+							// Split file_contents on newline
+							std::istringstream iss(file_contents);
+							std::string line;
+							while (std::getline(iss, line))
+							{
+								// Convert line to int
+								int num = -1;
+								try
+								{
+									num = std::stoi(line);
+								}
+								catch (const std::invalid_argument const& ex)
+								{
+									printf("Invalid argument: %s\n", ex.what());
+								}
+
+								if (num != -1)
+								{
+									printf("Goto block %d\n", num);
+									stc_gotoblock_hook(last_story_timeline_controller, num, false, false, false);
+								}
+							}
+
+							/*
+							// Convert file_contents to int
+							int num = -1;
+
+							try
+							{
+								num = std::stoi(file_contents);
+							}
+							catch (const std::invalid_argument const& ex)
+							{
+								
+							}
+
+							if (num != -1)
+							{
+								printf("Goto block %d\n", num);
+								stc_gotoblock_hook(last_story_timeline_controller, num, false, false, false);
+							}
+							*/
+						}
+					}
+				}
+				catch (std::exception& e)
+				{
+					printf("File read error: %s\n", e.what());
+				}
+			}
+		}
+		
+
+		Sleep(200);
+	}
+}
+
 
 void attach()
 {
@@ -2198,6 +2423,8 @@ void attach()
 	}
 
 	handle_keyboard_input();
+
+	file_check_thread();
 }
 
 void detach()

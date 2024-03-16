@@ -451,8 +451,6 @@ namespace
 		int dstCapacity)
 	{
 		// printf("LZ4_decompress_safe_ext_hook\n");
-		import_translations();
-
 		const int ret = reinterpret_cast<decltype(LZ4_decompress_safe_ext_hook)*>(LZ4_decompress_safe_ext_orig)(
 			src, dst, compressedSize, dstCapacity);
 
@@ -1640,7 +1638,7 @@ namespace
 	void* stc_initialize_orig = nullptr;
 	void* stc_initialize_hook(uintptr_t _this)
 	{
-		printf("stc_initialize_hook\n");
+		// printf("stc_initialize_hook\n");
 		void* ret = reinterpret_cast<decltype(stc_initialize_hook)*>(stc_initialize_orig)(_this);
 		return ret;
 	}
@@ -1648,7 +1646,7 @@ namespace
 	void* stc_release_orig = nullptr;
 	void* stc_release_hook(uintptr_t _this)
 	{
-		printf("stc_release_hook\n");
+		// printf("stc_release_hook\n");
 		if (last_story_timeline_controller == _this){
 			last_story_timeline_controller = 0;
 		}
@@ -1659,7 +1657,7 @@ namespace
 	void* stc_onendstory_orig = nullptr;
 	void* stc_onendstory_hook(uintptr_t _this)
 	{
-		printf("stc_onendstory_hook\n");
+		// printf("stc_onendstory_hook\n");
 		if (last_story_timeline_controller == _this){
 			last_story_timeline_controller = 0;
 		}
@@ -1670,11 +1668,11 @@ namespace
 	void* stc_gotoblock_orig = nullptr;
 	void* stc_gotoblock_hook(uintptr_t _this, int block_id, bool weakenCySpring, bool isUpdate, bool isChoice)
 	{
-		printf("stc_gotoblock_hook\n");
-		printf("block_id: %d\n", block_id);
-		printf("weakenCySpring: %d\n", weakenCySpring);
-		printf("isUpdate: %d\n", isUpdate);
-		printf("isChoice: %d\n", isChoice);
+		// printf("stc_gotoblock_hook\n");
+		// printf("block_id: %d\n", block_id);
+		// printf("weakenCySpring: %d\n", weakenCySpring);
+		// printf("isUpdate: %d\n", isUpdate);
+		// printf("isChoice: %d\n", isChoice);
 		last_story_timeline_controller = _this;
 		void* ret = reinterpret_cast<decltype(stc_gotoblock_hook)*>(stc_gotoblock_orig)(_this, block_id, weakenCySpring, isUpdate, isChoice);
 		return ret;
@@ -1683,7 +1681,7 @@ namespace
 	void* stc_gotoblockforskip_orig = nullptr;
 	void* stc_gotoblockforskip_hook(void* _this, int block_id, void* weakenCySpring)
 	{
-		printf("stc_gotoblockforskip_hook\n");
+		// printf("stc_gotoblockforskip_hook\n");
 		void* ret = reinterpret_cast<decltype(stc_gotoblockforskip_hook)*>(stc_gotoblockforskip_orig)(_this, block_id, weakenCySpring);
 		return ret;
 	}
@@ -2177,12 +2175,18 @@ namespace
 	}
 }
 
-const int ctrl_key = 162;
-const int d_key = 68;
+const int ctrl_key = 0xA2;
+const int shift_key = 0xA0;
+const int alt_key = 0xA4;
+const int d_key = 0x44;
+const int r_key = 0x52;
 
 const std::set<int> keys_to_check = {
 	ctrl_key,
-	d_key
+	shift_key,
+	alt_key,
+	d_key,
+	r_key
 };
 std::set<int> pressed_keys;
 
@@ -2221,7 +2225,9 @@ LRESULT CALLBACK keyboard_hook_proc(int nCode, WPARAM wParam, LPARAM lParam)
 			add_key(key);
 
 			// Keyboard shortcuts go here
-			if (is_pressed(ctrl_key) && is_pressed(d_key))
+
+			// Debug mode
+			if (is_pressed(ctrl_key) && is_pressed(shift_key) && is_pressed(alt_key) && is_pressed(d_key))
 			{
 				debug_level++;
 				if (debug_level > max_debug_level)
@@ -2229,6 +2235,12 @@ LRESULT CALLBACK keyboard_hook_proc(int nCode, WPARAM wParam, LPARAM lParam)
 					debug_level = 0;
 				}
 				printf("Debug level: %d\n", debug_level);
+			}
+
+			// Reload translations
+			if (is_pressed(ctrl_key) && is_pressed(shift_key) && is_pressed(alt_key) && is_pressed(r_key))
+			{
+				import_translations();
 			}
 		}
 

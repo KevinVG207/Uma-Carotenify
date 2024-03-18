@@ -247,7 +247,6 @@ namespace
 		// replaceAll(in_str, "<esc>", "");  // Scale tag end
 		removePropertyTag(in_str, "sc");
 		removePropertyTag(in_str, "p");
-		replaceAll(in_str, "</p>", "");
 	}
 
 	std::string il2cppstring_to_utf8(std::wstring str)

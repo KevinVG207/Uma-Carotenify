@@ -229,8 +229,6 @@ namespace
 		replaceAll(in_str, "<rbr>", "");
 		replaceAll(in_str, "<br>", "");
 		replaceAll(in_str, "<force>", "");
-		replaceAll(in_str, "<ords>", "");  // Ordinal numeral start
-		replaceAll(in_str, "<orde>", "");  // Ordinal numeral end
 		replaceAll(in_str, "<sy>", "");
 		replaceAll(in_str, "<sd>", "");
 		replaceAll(in_str, "<sh>", "");
@@ -247,6 +245,7 @@ namespace
 		// replaceAll(in_str, "<esc>", "");  // Scale tag end
 		removePropertyTag(in_str, "sc");
 		removePropertyTag(in_str, "p");
+		removePropertyTag(in_str, "ord");
 	}
 
 	std::string il2cppstring_to_utf8(std::wstring str)
@@ -688,67 +687,58 @@ namespace
 
 	std::string handle_ordinal_numberals(std::string str)
 	{
-		while (str.find("<ords>") != std::string::npos)
+		while (str.find("<ord=") != std::string::npos)
 		{
-			auto start = str.find("<ords>");
-			auto end = str.find("<orde>");
+			auto start = str.find("<ord=");
+			auto end = str.find(">", start);
 
-			if (end == std::string::npos)
-			{
-				// No end tag found
-				break;
-			}
+			std::string param = getPropertyTag(str, "ord");
 
-			std::string substr = str.substr(start + 6, end - start - 6);
+			std::string substr = param;
+			std::string out_str = "th";
 
 			if (substr == "1")
 			{
-				substr += "st";
+				out_str = "st";
 			}
 			else if (substr == "2")
 			{
-				substr += "nd";
+				out_str = "nd";
 			}
 			else if (substr == "3")
 			{
-				substr += "rd";
+				out_str = "rd";
 			}
 
 			else if (substr.length() > 1)
 			{
 				if (substr[substr.length() - 2] == '1')
 				{
-					substr += "th";
+					out_str = "th";
 				}
 				else
 				{
 					if (substr.back() == '1')
 					{
-						substr += "st";
+						out_str = "st";
 					}
 					else if (substr.back() == '2')
 					{
-						substr += "nd";
+						out_str = "nd";
 					}
 					else if (substr.back() == '3')
 					{
-						substr += "rd";
+						out_str = "rd";
 					}
 					else
 					{
-						substr += "th";
+						out_str = "th";
 					}
 				}
 			}
 
-			else
-			{
-				substr += "th";
-			}
-
-			str.replace(start, end - start + 6, substr);
+			str.replace(start, end - start + 1, out_str);
 		}
-		replaceAll(str, "<orde>", "");
 
 		return str;
 	}
@@ -870,9 +860,9 @@ namespace
 		while (str.find("<p=") != std::string::npos)
 		{
 			auto start = str.find("<p=");
+			auto end = str.find(">", start);
 
 			std::string param = getPropertyTag(str, "p");
-			removePropertyTag(str, "p");
 
 			// Split the param into singular and plural
 			std::string singular;
@@ -884,39 +874,15 @@ namespace
 			// The rest is the number. Go all the way to the end of the string
 			std::getline(iss, num_str, '\0');
 
-			std::string check_part;
-			// If num_str is < 2 characters, it's a single digit number
-			if (num_str.length() < 2)
-			{
-				check_part = num_str;
-			}
-			else
-			{
-				// Take the last 2 characters
-				check_part = num_str.substr(num_str.length() - 2, 2);
-			}
-
-
-			int num = -1;
-
-			try
-			{
-				num = std::stoi(check_part);
-			}
-			catch (const std::invalid_argument const& ex)
-			{
-				
-			}
-
 			std::string new_part;
-			if (num == 1)
+			if (num_str.back() == '1')
 			{
 				new_part = singular;
 			} else {
 				new_part = plural;
 			}
 
-			str.insert(start, new_part);
+			str.replace(start, end - start + 1, new_part);
 		}
 
 		return str;

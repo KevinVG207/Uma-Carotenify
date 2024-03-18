@@ -247,7 +247,6 @@ namespace
 		// replaceAll(in_str, "<esc>", "");  // Scale tag end
 		removePropertyTag(in_str, "sc");
 		removePropertyTag(in_str, "p");
-		replaceAll(in_str, "</p>", "");
 	}
 
 	std::string il2cppstring_to_utf8(std::wstring str)
@@ -871,35 +870,38 @@ namespace
 		while (str.find("<p=") != std::string::npos)
 		{
 			auto start = str.find("<p=");
-			auto end = str.find("</p>", start);
 
-			if (end == std::string::npos)
-			{
-				// No end tag found
-				break;
-			}
-
-			// This function also removes the start tag!
 			std::string param = getPropertyTag(str, "p");
 			removePropertyTag(str, "p");
-
-			// End position has changed
-			end = str.find("</p>", start);
 
 			// Split the param into singular and plural
 			std::string singular;
 			std::string plural;
+			std::string num_str;
 			std::istringstream iss(param);
 			std::getline(iss, singular, ',');
 			std::getline(iss, plural, ',');
+			// The rest is the number. Go all the way to the end of the string
+			std::getline(iss, num_str, '\0');
 
-			std::string substr = str.substr(start, end - start);
+			std::string check_part;
+			// If num_str is < 2 characters, it's a single digit number
+			if (num_str.length() < 2)
+			{
+				check_part = num_str;
+			}
+			else
+			{
+				// Take the last 2 characters
+				check_part = num_str.substr(num_str.length() - 2, 2);
+			}
+
 
 			int num = -1;
 
 			try
 			{
-				num = std::stoi(substr);
+				num = std::stoi(check_part);
 			}
 			catch (const std::invalid_argument const& ex)
 			{
@@ -914,9 +916,7 @@ namespace
 				new_part = plural;
 			}
 
-			substr += " " + new_part;
-
-			str.replace(start, end - start + 4, substr);
+			str.insert(start, new_part);
 		}
 
 		return str;

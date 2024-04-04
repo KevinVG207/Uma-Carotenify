@@ -225,7 +225,7 @@ namespace
 		replaceAll(in_str, "<ub>", "");
 		replaceAll(in_str, "<mon>", "");
 		replaceAll(in_str, "<slogan>", "");
-		replaceAll(in_str, "<story>", "");
+		replaceAll(in_str, "󠁿", "");  // Story line indicator
 		replaceAll(in_str, "<rbr>", "");
 		replaceAll(in_str, "<br>", "");
 		replaceAll(in_str, "<force>", "");
@@ -1045,14 +1045,14 @@ namespace
 			replaceAll(str_utf8, "\n", "");
 			settings->horizontalOverflow = 0;
 		}
-		if (str_utf8.find("<story>") != std::string::npos)
+		if (str_utf8.find("󠁿") != std::string::npos)
 		{
-			replaceAll(str_utf8, "<story>", "");
+			replaceAll(str_utf8, "󠁿", "");
 			settings->fontSize *= 0.9f;
 			settings->lineSpacing *= 0.8f;
 			Vector2_t tmp_pivot = settings->pivot;
-			tmp_pivot.y += 0.05f;
-			tmp_pivot.x -= 0.10f;
+			tmp_pivot.y += 0.08f;
+			tmp_pivot.x -= 0.05f;
 			settings->pivot = tmp_pivot;
 		}
 		if (str_utf8.find("<br>") != std::string::npos)

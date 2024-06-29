@@ -57,7 +57,12 @@ namespace
 	const std::vector<std::string> training_result_array = {
 		"at Gallop.SingleModeMainTrainingCuttController.GetTrainingEffectMessageWindowTextList",
 		"at Gallop.TrainingParamChangeUI.GetMessageText",
-		"at Gallop.StoryEventConclusion"
+		"at Gallop.StoryEventConclusion",
+		"at Gallop.SingleModeScenarioCookCookedDishModel.CreateChangeParameterInfoAtCooked",
+		"at Gallop.SingleModeScenarioCookDishModel+SingleModeCookDishEffect.get_TrainingParamChangeUIText",
+		"at Gallop.TrainingParamChangeUI.OnNextTypewrite",
+		"at Gallop.TrainingParamChangeUI.StartTypewrite",
+		"at Gallop.PartsSingleModeScenarioCookGetMaterialIconFlashPlayer.PlayGetMaterialIcon"
 	};
 
 	const std::vector<std::string> valid_textcommon_classes = {

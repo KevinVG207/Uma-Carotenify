@@ -22,7 +22,7 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 		current_path(module_path.parent_path());
 
 		if (ul_reason_for_call == DLL_PROCESS_ATTACH)
-			std::thread(attach).detach();
+			attach();
 
 		if (ul_reason_for_call == DLL_PROCESS_DETACH)
 			detach();

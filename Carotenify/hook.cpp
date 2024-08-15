@@ -2407,7 +2407,8 @@ void attach()
 
 	handle_keyboard_input();
 
-	file_check_thread();
+	// file_check_thread();
+	CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)file_check_thread, NULL, 0, NULL);
 }
 
 void detach()
